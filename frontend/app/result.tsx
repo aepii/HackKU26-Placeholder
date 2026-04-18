@@ -1,4 +1,5 @@
 import { View, ScrollView, StyleSheet } from "react-native";
+import { useState } from "react";
 import { useLocalSearchParams } from "expo-router";
 import { ArchSchema } from "../types/chart.types";
 import ArchCanvas from "../components/ArchCanvas";
@@ -6,14 +7,24 @@ import FeedbackPanel from "../components/FeedbackPanel";
 
 export default function ResultScreen() {
   const { schema: raw } = useLocalSearchParams<{ schema: string }>();
-  const schema: ArchSchema = JSON.parse(raw);
+
+  const initialSchema: ArchSchema = raw
+    ? JSON.parse(raw)
+    : {
+        nodes: [],
+        edges: [],
+        feedback: [],
+      };
+
+  const [nodes, setNodes] = useState(initialSchema.nodes);
+  const [edges] = useState(initialSchema.edges);
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.canvasCard}>
-        <ArchCanvas nodes={schema.nodes} edges={schema.edges} />
+        <ArchCanvas nodes={nodes} edges={edges} setNodes={setNodes} />
       </View>
-      <FeedbackPanel feedback={schema.feedback} />
+      <FeedbackPanel feedback={initialSchema.feedback} />
     </ScrollView>
   );
 }

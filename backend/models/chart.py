@@ -8,6 +8,7 @@ class NodeSchema(BaseModel):
     type: str
     label: str
     description: str
+    
 
 
 class EdgeSchema(BaseModel):

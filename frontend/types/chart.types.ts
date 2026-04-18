@@ -3,6 +3,7 @@ export interface NodeSchema {
   type: string
   label: string
   description: string
+  annotation?: string //added
 }
 
 export interface EdgeSchema {
