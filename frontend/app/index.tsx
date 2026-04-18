@@ -17,6 +17,36 @@ export default function HomeScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [webFile, setWebFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+
+  const [loadingStep, setLoadingStep] = useState<string>("");
+  const [rejection, setRejection] = useState<string | null>(null);
+
+  const analyze = async () => {
+    if (!imageUri) return;
+
+    setLoading(true);
+    setRejection(null);
+    setLoadingStep("Checking diagram...");
+
+    try {
+      const schema = await validateArchitecture(imageUri, webFile ?? undefined);
+
+      setLoadingStep("Extracting architecture...");
+
+      router.push({
+        pathname: "/result",
+        params: { schema: JSON.stringify(schema) },
+      });
+    } catch (e: any) {
+      const detail = e.response?.data?.detail || "Something went wrong";
+
+      setRejection(detail);
+    } finally {
+      setLoading(false);
+      setLoadingStep("");
+    }
+  };
+
   const router = useRouter();
 
   const pickImage = async (useCamera: boolean) => {
@@ -29,22 +59,6 @@ export default function HomeScreen() {
     setImageUri(asset.uri);
     if (Platform.OS === "web" && (asset as any).file) {
       setWebFile((asset as any).file);
-    }
-  };
-
-  const analyze = async () => {
-    if (!imageUri) return;
-    setLoading(true);
-    try {
-      const schema = await validateArchitecture(imageUri, webFile ?? undefined);
-      router.push({
-        pathname: "/result",
-        params: { schema: JSON.stringify(schema) },
-      });
-    } catch (e: any) {
-      alert(e.response?.data?.detail || "Something went wrong");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -89,6 +103,17 @@ export default function HomeScreen() {
         </View>
       )}
 
+      {rejection && (
+        <View style={styles.rejectionBox}>
+          <Text style={styles.rejectionIcon}>🔍</Text>
+          <Text style={styles.rejectionTitle}>Not recognised as a diagram</Text>
+          <Text style={styles.rejectionText}>{rejection}</Text>
+          <TouchableOpacity onPress={() => setRejection(null)}>
+            <Text style={styles.rejectionDismiss}>Try another photo →</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Buttons */}
       <View style={styles.btnRow}>
         <TouchableOpacity style={styles.btn} onPress={() => pickImage(true)}>
@@ -109,7 +134,10 @@ export default function HomeScreen() {
           disabled={loading}
         >
           {loading ? (
-            <ActivityIndicator color={theme.colors.chalk} />
+            <View style={{ alignItems: "center", gap: 6 }}>
+              <ActivityIndicator color={theme.colors.chalk} />
+              <Text style={styles.loadingStep}>{loadingStep}</Text>
+            </View>
           ) : (
             <Text style={styles.analyzeBtnText}>✦ Analyze Architecture</Text>
           )}
@@ -253,5 +281,40 @@ const styles = StyleSheet.create({
     color: theme.colors.textLight,
     position: "absolute",
     bottom: 16,
+  },
+  loadingStep: {
+    fontFamily: theme.fonts.body,
+    fontSize: 12,
+    color: theme.colors.chalk,
+    opacity: 0.8,
+  },
+  rejectionBox: {
+    width: 300,
+    backgroundColor: "#fef2f2",
+    borderRadius: theme.radius.md,
+    borderWidth: 1.5,
+    borderColor: "#fecaca",
+    padding: 16,
+    alignItems: "center",
+    gap: 6,
+  },
+  rejectionIcon: { fontSize: 28 },
+  rejectionTitle: {
+    fontFamily: theme.fonts.display,
+    fontSize: 20,
+    color: "#991b1b",
+  },
+  rejectionText: {
+    fontFamily: theme.fonts.body,
+    fontSize: 13,
+    color: "#7f1d1d",
+    textAlign: "center",
+    lineHeight: 18,
+  },
+  rejectionDismiss: {
+    fontFamily: theme.fonts.bodyMed,
+    fontSize: 13,
+    color: theme.colors.accentRed,
+    marginTop: 4,
   },
 });

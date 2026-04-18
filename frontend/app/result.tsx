@@ -52,6 +52,39 @@ export default function ResultScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+      {/* Confidence banner */}
+      {schema.confidence !== undefined && (
+        <View
+          style={[
+            styles.confidenceBanner,
+            schema.confidence >= 0.85
+              ? styles.confHigh
+              : schema.confidence >= 0.6
+                ? styles.confMed
+                : styles.confLow,
+          ]}
+        >
+          <View style={styles.confLeft}>
+            <Text style={styles.confLabel}>Diagram Confidence</Text>
+            <Text style={styles.confReason} numberOfLines={2}>
+              {schema.confidence_reason || "Analyzed by Gemini Vision"}
+            </Text>
+          </View>
+          <View style={styles.confRight}>
+            <Text style={styles.confScore}>
+              {Math.round(schema.confidence * 100)}%
+            </Text>
+            <Text style={styles.confEmoji}>
+              {schema.confidence >= 0.85
+                ? "✓"
+                : schema.confidence >= 0.6
+                  ? "~"
+                  : "!"}
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* Canvas — full chalkboard */}
       <View style={styles.canvasCard}>
         <ArchCanvas
@@ -144,4 +177,50 @@ const styles = StyleSheet.create({
     color: theme.colors.chalk,
   },
   disabled: { opacity: 0.6 },
+  confidenceBanner: {
+    borderRadius: theme.radius.md,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1.5,
+  },
+  confHigh: {
+    backgroundColor: "#f0faf4",
+    borderColor: "#b6dfc8",
+  },
+  confMed: {
+    backgroundColor: "#fffbeb",
+    borderColor: "#fde68a",
+  },
+  confLow: {
+    backgroundColor: "#fef2f2",
+    borderColor: "#fecaca",
+  },
+  confLeft: { flex: 1, gap: 3 },
+  confLabel: {
+    fontFamily: theme.fonts.bodyMed,
+    fontSize: 11,
+    color: theme.colors.textMuted,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  confReason: {
+    fontFamily: theme.fonts.body,
+    fontSize: 13,
+    color: theme.colors.text,
+    lineHeight: 18,
+  },
+  confRight: { alignItems: "center", gap: 2, paddingLeft: 12 },
+  confScore: {
+    fontFamily: theme.fonts.display,
+    fontSize: 28,
+    color: theme.colors.text,
+    lineHeight: 32,
+  },
+  confEmoji: {
+    fontFamily: theme.fonts.bodyBold,
+    fontSize: 12,
+    color: theme.colors.textMuted,
+  },
 });

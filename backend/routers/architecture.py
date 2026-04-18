@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from models import ArchitectureDoc
+from models import ArchitectureDoc, ImproveRequest
 from services import (
     is_architecture_diagram,
     extract_architecture,
@@ -23,10 +23,12 @@ async def validate_architecture(file: UploadFile = File(...)):
         image_bytes = await file.read()
         mime_type = file.content_type or "image/jpeg"
 
-        if not await is_architecture_diagram(image_bytes, mime_type):
+        gate = await is_architecture_diagram(image_bytes, mime_type)
+
+        if not gate.get("is_architecture", False):
             raise HTTPException(
                 status_code=400,
-                detail="Image does not appear to be an architecture diagram.",
+                detail=f"Image does not appear to be an architecture diagram. {gate.get('reason', '')}",
             )
 
         ext = os.path.splitext(file.filename or "photo.jpg")[1] or ".jpg"
@@ -50,6 +52,8 @@ async def validate_architecture(file: UploadFile = File(...)):
             "id": str(doc.id),
             "image_filename": saved_name,
             "share_token": doc.share_token,
+            "confidence": gate.get("confidence", 1.0),
+            "confidence_reason": gate.get("reason", ""),
         }
 
     except HTTPException:
@@ -75,12 +79,6 @@ async def delete_history_item(doc_id: str):
             os.remove(path)
     await doc.delete()
     return {"ok": True}
-
-
-class ImproveRequest(BaseModel):
-    nodes: list
-    edges: list
-    feedback: list[str]
 
 
 @router.post("/improve-architecture")

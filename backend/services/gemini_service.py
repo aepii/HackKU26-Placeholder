@@ -12,7 +12,36 @@ if not api_key:
 
 client = genai.Client(api_key=api_key)
 
-GATEKEEPER_PROMPT = """Look at this image. Is it a whiteboard or paper diagram showing a software/system architecture? Answer with only: true or false"""
+GATEKEEPER_PROMPT = """Look at this image. Is it a whiteboard or paper diagram showing a software/system architecture?
+
+Return ONLY valid JSON:
+{
+  "is_architecture": true,
+  "confidence": 0.95,
+  "reason": "Contains server boxes, database symbols, and labeled arrows"
+}"""
+
+
+async def is_architecture_diagram(image_bytes: bytes, mime_type: str) -> dict:
+    response = client.models.generate_content(
+        model="gemini-2.5-flash-lite",
+        contents=[
+            types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
+            GATEKEEPER_PROMPT,
+        ],
+    )
+    raw = response.text.strip().removeprefix("```json").removesuffix("```").strip()
+    try:
+        result = json.loads(raw)
+        return result
+    except json.JSONDecodeError:
+        # fallback
+        return {
+            "is_architecture": "true" in response.text.lower(),
+            "confidence": 0.5,
+            "reason": "",
+        }
+
 
 EXTRACTION_PROMPT = """You are a senior software architect. Analyze this whiteboard diagram and return ONLY valid JSON — no markdown, no explanation — matching this exact schema:
 {
@@ -31,17 +60,6 @@ Rules:
 - bidirectional true means data flows both ways on that edge
 - feedback should contain 3-5 specific architectural critiques (security, scalability, single points of failure)
 Return ONLY the JSON object."""
-
-
-async def is_architecture_diagram(image_bytes: bytes, mime_type: str) -> bool:
-    response = client.models.generate_content(
-        model="gemini-2.5-flash-lite",
-        contents=[
-            types.Part.from_bytes(data=image_bytes, mime_type=mime_type),
-            GATEKEEPER_PROMPT,
-        ],
-    )
-    return "true" in response.text.lower()
 
 
 async def extract_architecture(image_bytes: bytes, mime_type: str) -> dict:
@@ -95,9 +113,10 @@ Rules:
 - Keep all existing id values stable where possible; add new nodes with new unique ids
 Return ONLY the JSON object."""
 
-# This function takes the current nodes, edges, and feedback for an architecture diagram, formats them into a prompt, and sends it to the Gemini API to receive an improved architecture diagram based on the feedback. It returns the new set of nodes, edges, feedback, and a list of specific improvements made.
 
-
+# This function takes the current nodes, edges, and feedback for an architecture diagram, formats them into a prompt,
+# and sends it to the Gemini API to receive an improved architecture diagram based on the feedback.
+# It returns the new set of nodes, edges, feedback, and a list of specific improvements made.
 async def improve_architecture(nodes: list, edges: list, feedback: list[str]) -> dict:
     current_json = json.dumps({"nodes": nodes, "edges": edges}, indent=2)
     filled = IMPROVEMENT_PROMPT.format(

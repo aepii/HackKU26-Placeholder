@@ -41,3 +41,9 @@ class ArchitectureDoc(Document):
 
     class Settings:
         name = "architectures"
+
+
+class ImproveRequest(BaseModel):
+    nodes: list
+    edges: list
+    feedback: list[str]

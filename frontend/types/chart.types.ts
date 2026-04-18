@@ -24,6 +24,8 @@ export interface ArchSchema {
   feedback: string[];
   image_filename?: string;
   share_token?: string;
+  confidence?: number;
+  confidence_reason?: string;
 }
 
 // Represents a single item in the history of uploaded architecture diagrams, including its extracted nodes, edges, feedback, and associated image filename (if any)
