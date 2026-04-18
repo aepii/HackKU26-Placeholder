@@ -16,15 +16,20 @@ GATEKEEPER_PROMPT = """Look at this image. Is it a whiteboard or paper diagram s
 
 EXTRACTION_PROMPT = """You are a senior software architect. Analyze this whiteboard diagram and return ONLY valid JSON — no markdown, no explanation — matching this exact schema:
 {
-  "nodes": [{"id": "string", "type": "string", "label": "string", "description": "string"}],
-  "edges": [{"source": "string", "target": "string", "label": "string"}],
+  "nodes": [{"id": "string", "type": "string", "label": "string", "description": "string", "zone": "string|null"}],
+  "edges": [{"source": "string", "target": "string", "label": "string", "protocol": "string|null", "bidirectional": false}],
+  "zones": [{"id": "string", "label": "string", "color": "string"}],
   "feedback": ["string"]
 }
 Rules:
 - id values must be unique strings ("1", "2", etc.)
-- type should be one of: server, database, queue, cache, client, loadbalancer, cdn, other
+- node type should be one of: server, database, queue, cache, client, loadbalancer, cdn, other
+- node zone must match a zone id, or null if the node doesn't belong to a zone
+- zones represent logical groupings like: vpc, dmz, internet, internal, cloud, mobile, frontend, backend
+- zone color should be one of: blue, green, orange, purple, red, slate
+- edges protocol should be one of: HTTP, HTTPS, TCP, gRPC, WebSocket, AMQP, SQL, Redis, null
+- bidirectional true means data flows both ways on that edge
 - feedback should contain 3-5 specific architectural critiques (security, scalability, single points of failure)
-- edges reference node ids via source/target
 Return ONLY the JSON object."""
 
 
@@ -77,9 +82,10 @@ Rules:
 Return ONLY the JSON object."""
 
 # This function takes the current nodes, edges, and feedback for an architecture diagram, formats them into a prompt, and sends it to the Gemini API to receive an improved architecture diagram based on the feedback. It returns the new set of nodes, edges, feedback, and a list of specific improvements made.
+
+
 async def improve_architecture(nodes: list, edges: list, feedback: list[str]) -> dict:
-    import json as _json
-    current_json = _json.dumps({"nodes": nodes, "edges": edges}, indent=2)
+    current_json = json.dumps({"nodes": nodes, "edges": edges}, indent=2)
     filled = IMPROVEMENT_PROMPT.format(
         feedback="\n".join(f"- {f}" for f in feedback),
         current_json=current_json,
@@ -90,6 +96,6 @@ async def improve_architecture(nodes: list, edges: list, feedback: list[str]) ->
     )
     raw = response.text.strip().removeprefix("```json").removesuffix("```").strip()
     try:
-        return _json.loads(raw)
-    except _json.JSONDecodeError:
+        return json.loads(raw)
+    except json.JSONDecodeError:
         raise ValueError(f"Gemini returned invalid JSON: {raw[:200]}")

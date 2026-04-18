@@ -53,7 +53,11 @@ export default function ResultScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.canvasCard}>
-        <ArchCanvas nodes={current.nodes} edges={current.edges} />
+        <ArchCanvas
+          nodes={current.nodes}
+          edges={current.edges}
+          zones={current.zones ?? []}
+        />
       </View>
 
       <View style={styles.row}>

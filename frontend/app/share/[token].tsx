@@ -43,7 +43,11 @@ export default function ShareScreen() {
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <Text style={styles.badge}>🔗 Shared Architecture</Text>
       <View style={styles.canvasCard}>
-        <ArchCanvas nodes={schema.nodes} edges={schema.edges} />
+        <ArchCanvas
+          nodes={schema.nodes}
+          edges={schema.edges}
+          zones={schema.zones ?? []}
+        />
       </View>
       <FeedbackPanel feedback={schema.feedback} />
     </ScrollView>

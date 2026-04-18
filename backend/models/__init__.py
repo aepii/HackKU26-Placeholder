@@ -1,1 +1,1 @@
-from .chart import ArchitectureDoc, NodeSchema, EdgeSchema
+from .chart import ArchitectureDoc, NodeSchema, EdgeSchema, ZoneSchema

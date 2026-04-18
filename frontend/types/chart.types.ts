@@ -4,6 +4,7 @@ export interface NodeSchema {
   type: string;
   label: string;
   description: string;
+  zone?: string | null;
 }
 
 // Represents a directed connection between two nodes in the architecture diagram, with an optional label describing the relationship
@@ -11,12 +12,15 @@ export interface EdgeSchema {
   source: string;
   target: string;
   label: string;
+  protocol?: string | null;
+  bidirectional?: boolean;
 }
 
 // Extended schema that includes improvement suggestions based on the analysis of the architecture diagram, in addition to the original nodes, edges, and feedback
 export interface ArchSchema {
   nodes: NodeSchema[];
   edges: EdgeSchema[];
+  zones?: ZoneSchema[];
   feedback: string[];
   image_filename?: string;
   share_token?: string;
@@ -27,8 +31,16 @@ export interface HistoryItem {
   id: string;
   nodes: NodeSchema[];
   edges: EdgeSchema[];
+  zones?: ZoneSchema[];
   feedback: string[];
   image_filename: string | null;
+  share_token?: string;
+}
+
+export interface ZoneSchema {
+  id: string;
+  label: string;
+  color: string;
 }
 
 // Extended schema that includes improvement suggestions based on the analysis of the architecture diagram, in addition to the original nodes, edges, and feedback
