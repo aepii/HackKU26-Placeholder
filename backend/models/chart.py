@@ -21,6 +21,8 @@ class ArchitectureDoc(Document):
     edges: list[EdgeSchema]
     feedback: list[str]
     image_filename: Optional[str] = None
+    share_token: Optional[str] = None
+    created_at: Optional[str] = None
 
     class Settings:
         name = "architectures"

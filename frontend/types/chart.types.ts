@@ -1,18 +1,19 @@
 export interface NodeSchema {
-  id: string
-  type: string
-  label: string
-  description: string
+  id: string;
+  type: string;
+  label: string;
+  description: string;
 }
 
 export interface EdgeSchema {
-  source: string
-  target: string
-  label: string
+  source: string;
+  target: string;
+  label: string;
 }
 
 export interface ArchSchema {
-  nodes: NodeSchema[]
-  edges: EdgeSchema[]
-  feedback: string[]
+  nodes: NodeSchema[];
+  edges: EdgeSchema[];
+  feedback: string[];
+  share_token?: string;
 }

@@ -1,31 +1,45 @@
-import { ArchSchema } from './types/chart.types'
+import { ArchSchema } from "./types/chart.types";
 
-const BASE = 'http://localhost:8000'
+const BASE = "http://localhost:8000";
 
-export async function validateArchitecture(imageUri: string, file?: File): Promise<ArchSchema> {
-  const form = new FormData()
+export async function validateArchitecture(
+  imageUri: string,
+  file?: File,
+): Promise<ArchSchema> {
+  const form = new FormData();
 
   if (file) {
     // Web: real File object from the browser
-    form.append('file', file)
+    form.append("file", file);
   } else {
     // Native device: React Native's special URI object
-    form.append('file', {
+    form.append("file", {
       uri: imageUri,
-      name: 'photo.jpg',
-      type: 'image/jpeg',
-    } as any)
+      name: "photo.jpg",
+      type: "image/jpeg",
+    } as any);
   }
 
   const response = await fetch(`${BASE}/api/validate-architecture`, {
-    method: 'POST',
+    method: "POST",
     body: form,
-  })
+  });
 
   if (!response.ok) {
-    const error = await response.json()
-    throw { response: { data: error } }
+    const error = await response.json();
+    throw { response: { data: error } };
   }
 
-  return response.json()
+  return response.json();
+}
+
+export async function getSharedArchitecture(
+  token: string,
+): Promise<ArchSchema> {
+  const response = await fetch(`${BASE}/api/share/${token}`);
+  if (!response.ok) {
+    const error = await response.json();
+    throw { response: { data: error } };
+  }
+  return response.json();
 }
