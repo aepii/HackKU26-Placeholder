@@ -13,6 +13,7 @@ import {
 import { useRouter } from "expo-router";
 import { getHistory, deleteHistoryItem } from "../api";
 import { HistoryItem } from "../types/chart.types";
+import { theme } from "../constants/theme";
 
 const BASE = "http://localhost:8000";
 
@@ -175,42 +176,86 @@ export default function HistoryScreen() {
 
 // Styles for the History screen components
 const styles = StyleSheet.create({
-  center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
+  center: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: theme.colors.bg,
+  },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
-  emptyTitle: { fontSize: 18, fontWeight: "600", color: "#1e293b" },
+  emptyTitle: {
+    fontFamily: theme.fonts.display,
+    fontSize: 28,
+    color: theme.colors.text,
+  },
   emptySubtitle: {
+    fontFamily: theme.fonts.body,
     fontSize: 14,
-    color: "#94a3b8",
+    color: theme.colors.textMuted,
     textAlign: "center",
     paddingHorizontal: 32,
   },
-  list: { padding: 16, gap: 12 },
+  list: { padding: 16, gap: 12, backgroundColor: theme.colors.bg },
   card: {
     flexDirection: "row",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.md,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
     overflow: "hidden",
     alignItems: "center",
   },
   thumb: { width: 90, height: 90 },
   thumbPlaceholder: {
-    backgroundColor: "#f1f5f9",
+    backgroundColor: theme.colors.bgDeep,
     alignItems: "center",
     justifyContent: "center",
   },
-  info: { flex: 1, padding: 12, gap: 4 },
-  nodeCount: { fontSize: 12, fontWeight: "600", color: "#1d9e75" },
-  preview: { fontSize: 13, color: "#374151", lineHeight: 18 },
+  info: { flex: 1, padding: 12, gap: 5 },
+  nodeCount: {
+    fontFamily: theme.fonts.bodyMed,
+    fontSize: 12,
+    color: theme.colors.accent,
+  },
+  preview: {
+    fontFamily: theme.fonts.body,
+    fontSize: 13,
+    color: theme.colors.text,
+    lineHeight: 18,
+  },
   tags: { flexDirection: "row", flexWrap: "wrap", gap: 4, marginTop: 4 },
   tag: {
-    backgroundColor: "#f1f5f9",
+    backgroundColor: theme.colors.bgDeep,
     borderRadius: 6,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
   },
-  tagText: { fontSize: 11, color: "#64748b", fontWeight: "500" },
+  tagText: {
+    fontFamily: theme.fonts.body,
+    fontSize: 11,
+    color: theme.colors.textMuted,
+  },
+  deleteArea: {
+    flexDirection: "column",
+    alignItems: "center",
+    padding: 8,
+    gap: 4,
+  },
+  confirmBtn: {
+    backgroundColor: theme.colors.accentRed,
+    borderRadius: 6,
+    padding: 6,
+  },
+  confirmText: { color: "white", fontSize: 12, fontWeight: "700" },
+  cancelBtn: {
+    backgroundColor: theme.colors.bgDeep,
+    borderRadius: 6,
+    padding: 6,
+  },
+  cancelText: { color: theme.colors.text, fontSize: 12, fontWeight: "700" },
   deleteBtn: { padding: 16 },
-  deleteText: { fontSize: 14, color: "#94a3b8" },
+  deleteText: { fontSize: 14, color: theme.colors.textLight },
 });
