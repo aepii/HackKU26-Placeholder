@@ -1,12 +1,7 @@
 import { useState } from "react";
 import {
-  View,
-  Text,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  ActivityIndicator,
-  Alert,
+  View, Text, TouchableOpacity, Image,
+  StyleSheet, ActivityIndicator, Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useRouter } from "expo-router";
@@ -15,7 +10,7 @@ import { Platform } from "react-native";
 
 export default function HomeScreen() {
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [webFile, setWebFile] = useState<File | null>(null); // ← store the real File on web
+  const [webFile, setWebFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
   const router = useRouter();
 
@@ -25,11 +20,8 @@ export default function HomeScreen() {
       : ImagePicker.launchImageLibraryAsync;
     const result = await fn({ mediaTypes: ["images"], quality: 0.8 });
     if (result.canceled) return;
-
     const asset = result.assets[0];
     setImageUri(asset.uri);
-
-    // On web, expo-image-picker exposes the real File object on the asset
     if (Platform.OS === "web" && (asset as any).file) {
       setWebFile((asset as any).file);
     }
@@ -40,10 +32,7 @@ export default function HomeScreen() {
     setLoading(true);
     try {
       const schema = await validateArchitecture(imageUri, webFile ?? undefined);
-      router.push({
-        pathname: "/result",
-        params: { schema: JSON.stringify(schema) },
-      });
+      router.push({ pathname: "/result", params: { schema: JSON.stringify(schema) } });
     } catch (e: any) {
       Alert.alert("Error", e.response?.data?.detail || "Something went wrong");
     } finally {
@@ -53,6 +42,11 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      {/* History button */}
+      <TouchableOpacity style={styles.historyBtn} onPress={() => router.push("/history")}>
+        <Text style={styles.historyBtnText}>🕘 History</Text>
+      </TouchableOpacity>
+
       {imageUri ? (
         <Image source={{ uri: imageUri }} style={styles.preview} />
       ) : (
@@ -64,25 +58,16 @@ export default function HomeScreen() {
       <TouchableOpacity style={styles.btn} onPress={() => pickImage(true)}>
         <Text style={styles.btnText}>📷 Take Photo</Text>
       </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[styles.btn, styles.secondary]}
-        onPress={() => pickImage(false)}
-      >
+      <TouchableOpacity style={[styles.btn, styles.secondary]} onPress={() => pickImage(false)}>
         <Text style={styles.btnText}>🖼 Pick from Library</Text>
       </TouchableOpacity>
-
       {imageUri && (
         <TouchableOpacity
           style={[styles.btn, styles.primary, loading && styles.disabled]}
           onPress={analyze}
           disabled={loading}
         >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={styles.btnText}>Analyze Architecture</Text>
-          )}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Analyze Architecture</Text>}
         </TouchableOpacity>
       )}
     </View>
@@ -90,33 +75,13 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    padding: 24,
-    gap: 12,
-  },
-  placeholder: {
-    width: 300,
-    height: 200,
-    borderRadius: 12,
-    backgroundColor: "#f1f5f9",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 2,
-    borderColor: "#e2e8f0",
-    borderStyle: "dashed",
-  },
+  container: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, gap: 12 },
+  historyBtn: { position: "absolute", top: 16, right: 16, backgroundColor: "#e2e8f0", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20 },
+  historyBtnText: { color: "#374151", fontWeight: "500", fontSize: 13 },
+  placeholder: { width: 300, height: 200, borderRadius: 12, backgroundColor: "#f1f5f9", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: "#e2e8f0", borderStyle: "dashed" },
   placeholderText: { color: "#94a3b8", fontSize: 14 },
   preview: { width: 300, height: 200, borderRadius: 12 },
-  btn: {
-    width: 260,
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: "#64748b",
-    alignItems: "center",
-  },
+  btn: { width: 260, padding: 14, borderRadius: 10, backgroundColor: "#64748b", alignItems: "center" },
   secondary: { backgroundColor: "#475569" },
   primary: { backgroundColor: "#1d9e75" },
   disabled: { opacity: 0.6 },

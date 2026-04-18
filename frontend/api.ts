@@ -1,4 +1,4 @@
-import { ArchSchema } from './types/chart.types'
+import { ArchSchema, HistoryItem } from './types/chart.types'
 
 const BASE = 'http://localhost:8000'
 
@@ -28,4 +28,15 @@ export async function validateArchitecture(imageUri: string, file?: File): Promi
   }
 
   return response.json()
+}
+
+export async function getHistory(): Promise<HistoryItem[]> {
+  const res = await fetch(`${BASE}/api/history`)
+  if (!res.ok) throw new Error('Failed to fetch history')
+  return res.json()
+}
+
+export async function deleteHistoryItem(id: string): Promise<void> {
+  const res = await fetch(`${BASE}/api/history/${id}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error('Failed to delete item')
 }

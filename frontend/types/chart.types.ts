@@ -16,3 +16,11 @@ export interface ArchSchema {
   edges: EdgeSchema[]
   feedback: string[]
 }
+
+export interface HistoryItem {
+  id: string
+  nodes: NodeSchema[]
+  edges: EdgeSchema[]
+  feedback: string[]
+  image_filename: string | null
+}
