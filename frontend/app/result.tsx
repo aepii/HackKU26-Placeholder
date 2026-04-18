@@ -14,6 +14,7 @@ import { improveArchitecture } from "../api";
 import ArchCanvas from "../components/ArchCanvas";
 import FeedbackPanel from "../components/FeedbackPanel";
 import ImprovementsPanel from "../components/ImprovementsPanel";
+import AskPanel from "../components/AskPanel";
 import { theme } from "../constants/theme";
 
 const SHARE_BASE = "http://localhost:8081/share";
@@ -127,6 +128,11 @@ export default function ResultScreen() {
 
       {improved && <ImprovementsPanel improvements={improved.improvements} />}
       <FeedbackPanel feedback={current.feedback} />
+      <AskPanel
+        nodes={current.nodes}
+        edges={current.edges}
+        zones={current.zones ?? []}
+      />
     </ScrollView>
   );
 }

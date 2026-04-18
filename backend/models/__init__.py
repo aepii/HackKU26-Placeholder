@@ -1,1 +1,2 @@
-from .chart import ArchitectureDoc, NodeSchema, EdgeSchema, ZoneSchema, ImproveRequest
+from .chart import ArchitectureDoc, NodeSchema, EdgeSchema, ZoneSchema
+from .requests import ImproveRequest, AskRequest

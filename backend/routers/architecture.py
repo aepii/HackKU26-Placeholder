@@ -1,5 +1,5 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from models import ArchitectureDoc, ImproveRequest
+from models import ArchitectureDoc, ImproveRequest, AskRequest
 from services import (
     is_architecture_diagram,
     extract_architecture,
@@ -86,5 +86,18 @@ async def improve_architecture_endpoint(body: ImproveRequest):
     try:
         result = await improve_architecture(body.nodes, body.edges, body.feedback)
         return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/ask")
+async def ask_architecture(body: AskRequest):
+    try:
+        from services.gemini_service import ask_about_architecture
+
+        answer = await ask_about_architecture(
+            body.nodes, body.edges, body.zones, body.question
+        )
+        return {"answer": answer}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

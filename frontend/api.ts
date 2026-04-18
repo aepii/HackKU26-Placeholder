@@ -76,3 +76,18 @@ export async function getSharedArchitecture(
   }
   return response.json();
 }
+
+export async function askAboutArchitecture(
+  nodes: any[],
+  edges: any[],
+  zones: any[],
+  question: string,
+): Promise<{ answer: string }> {
+  const res = await fetch(`${BASE}/api/ask`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ nodes, edges, zones, question }),
+  });
+  if (!res.ok) throw new Error("Failed to ask");
+  return res.json();
+}

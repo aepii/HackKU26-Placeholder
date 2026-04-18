@@ -132,3 +132,24 @@ async def improve_architecture(nodes: list, edges: list, feedback: list[str]) ->
         return json.loads(raw)
     except json.JSONDecodeError:
         raise ValueError(f"Gemini returned invalid JSON: {raw[:200]}")
+
+
+ASK_PROMPT = """You are a senior software architect reviewing this system architecture:
+
+{context}
+
+Answer this question concisely in 2-3 sentences, like a staff engineer would in a code review:
+{question}"""
+
+
+async def ask_about_architecture(
+    nodes: list, edges: list, zones: list, question: str
+) -> str:
+    context = json.dumps({"nodes": nodes, "edges": edges, "zones": zones}, indent=2)
+    filled = ASK_PROMPT.format(context=context, question=question)
+
+    response = client.models.generate_content(
+        model="gemini-2.5-flash-lite",
+        contents=[filled],
+    )
+    return response.text.strip()
