@@ -5,6 +5,7 @@ export interface NodeSchema {
   label: string;
   description: string;
   zone?: string | null;
+  annotation?: string;
 }
 
 // Represents a directed connection between two nodes in the architecture diagram, with an optional label describing the relationship

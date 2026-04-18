@@ -10,6 +10,7 @@ class NodeSchema(BaseModel):
     label: str = ""
     description: str = ""
     zone: Optional[str] = None
+    annotation: Optional[str] = None
 
     @field_validator("label", "description", mode="before")
     @classmethod
@@ -21,6 +22,11 @@ class NodeSchema(BaseModel):
     def coerce_zone(cls, v):
         return None if (v is None or v == "null" or v == "") else v
 
+    @field_validator("annotation", mode="before")
+    @classmethod
+    def coerce_annotation(cls, v):
+        return v or None
+
 
 class EdgeSchema(BaseModel):
     """Represents an edge/connection between nodes in the architecture diagram."""
@@ -29,7 +35,7 @@ class EdgeSchema(BaseModel):
     label: str = ""
     protocol: Optional[str] = None
     bidirectional: Optional[bool] = False
-    
+
     @field_validator("label", mode="before")
     @classmethod
     def coerce_label(cls, v):

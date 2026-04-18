@@ -10,7 +10,7 @@ import {
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
-import { ArchSchema, ImprovedSchema } from "../types/chart.types";
+import { ArchSchema, ImprovedSchema, NodeSchema } from "../types/chart.types";
 import { improveArchitecture } from "../api";
 import ArchCanvas from "../components/ArchCanvas";
 import FeedbackPanel from "../components/FeedbackPanel";
@@ -25,13 +25,17 @@ export default function ResultScreen() {
   const { schema: raw } = useLocalSearchParams<{ schema: string }>();
   const schema: ArchSchema = JSON.parse(raw);
 
+  const [nodes, setNodes] = useState<NodeSchema[]>(schema.nodes);
   const [improved, setImproved] = useState<ImprovedSchema | null>(null);
   const [improving, setImproving] = useState(false);
   const [threatMode, setThreatMode] = useState(false);
-
   const [showOriginal, setShowOriginal] = useState(false);
 
-  const current = improved ?? schema;
+  // When improved, use improved nodes/edges/zones/feedback but keep local node state for annotations
+  const currentEdges = improved?.edges ?? schema.edges;
+  const currentZones = improved?.zones ?? schema.zones ?? [];
+  const currentFeedback = improved?.feedback ?? schema.feedback;
+  const currentSummary = improved?.summary ?? schema.summary;
 
   const copyShareLink = async () => {
     if (!schema.share_token) return;
@@ -43,11 +47,20 @@ export default function ResultScreen() {
     setImproving(true);
     try {
       const result = await improveArchitecture(
-        current.nodes,
-        current.edges,
-        current.feedback,
+        nodes,
+        currentEdges,
+        currentFeedback,
       );
       setImproved(result);
+      // Merge improved nodes with any local annotations already saved
+      setNodes((prev) =>
+        result.nodes.map((n) => {
+          const existing = prev.find((p) => p.id === n.id);
+          return existing?.annotation
+            ? { ...n, annotation: existing.annotation }
+            : n;
+        }),
+      );
     } catch (e: any) {
       alert(e.response?.data?.detail || "Something went wrong");
     } finally {
@@ -101,7 +114,7 @@ export default function ResultScreen() {
         </TouchableOpacity>
       )}
 
-      {/* Canvas — full chalkboard */}
+      {/* Canvas */}
       <View style={styles.canvasCard}>
         {showOriginal && (schema.image_url || schema.image_filename) ? (
           <Image
@@ -115,15 +128,16 @@ export default function ResultScreen() {
           />
         ) : (
           <ArchCanvas
-            nodes={current.nodes}
-            edges={current.edges}
-            zones={current.zones ?? []}
+            nodes={nodes}
+            edges={currentEdges}
+            zones={currentZones}
             threatMode={threatMode}
+            setNodes={setNodes}
           />
         )}
       </View>
 
-      {current.summary && <SummaryCard summary={current.summary} />}
+      {currentSummary && <SummaryCard summary={currentSummary} />}
 
       {/* Action pills */}
       <View style={styles.pillRow}>
@@ -156,12 +170,8 @@ export default function ResultScreen() {
       </TouchableOpacity>
 
       {improved && <ImprovementsPanel improvements={improved.improvements} />}
-      <FeedbackPanel feedback={current.feedback} />
-      <AskPanel
-        nodes={current.nodes}
-        edges={current.edges}
-        zones={current.zones ?? []}
-      />
+      <FeedbackPanel feedback={currentFeedback} />
+      <AskPanel nodes={nodes} edges={currentEdges} zones={currentZones} />
     </ScrollView>
   );
 }
@@ -220,18 +230,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     borderWidth: 1.5,
   },
-  confHigh: {
-    backgroundColor: "#f0faf4",
-    borderColor: "#b6dfc8",
-  },
-  confMed: {
-    backgroundColor: "#fffbeb",
-    borderColor: "#fde68a",
-  },
-  confLow: {
-    backgroundColor: "#fef2f2",
-    borderColor: "#fecaca",
-  },
+  confHigh: { backgroundColor: "#f0faf4", borderColor: "#b6dfc8" },
+  confMed: { backgroundColor: "#fffbeb", borderColor: "#fde68a" },
+  confLow: { backgroundColor: "#fef2f2", borderColor: "#fecaca" },
   confLeft: { flex: 1, gap: 3 },
   confLabel: {
     fontFamily: theme.fonts.bodyMed,

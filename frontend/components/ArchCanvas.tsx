@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { View, StyleSheet, Platform } from "react-native";
 import WebView from "react-native-webview";
 import { NodeSchema, EdgeSchema, ZoneSchema } from "../types/chart.types";
@@ -53,29 +54,27 @@ function buildHtml(
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
-  body { 
-  width:100vw; height:100vh; 
-  background: #2d4a3e;   /* ← chalkboard green */
-  overflow:hidden; 
-}
+  body { width:100vw; height:100vh; background:#2d4a3e; overflow:hidden; }
   #root { width:100%; height:100%; }
 
   .node-box {
-  padding: 10px 16px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 600;
-  color: white;
-  text-align: center;
-  min-width: 120px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  border: 1.5px solid rgba(255,255,255,0.25);
-  backdrop-filter: blur(4px);
-}
+    position: relative;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: white;
+    text-align: center;
+    min-width: 120px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    border: 1.5px solid rgba(255,255,255,0.25);
+    backdrop-filter: blur(4px);
+    cursor: pointer;
+  }
   .node-icon  { font-size:18px; line-height:1; }
   .node-label { font-size:12px; font-weight:700; letter-spacing:0.01em; }
   .node-type  {
@@ -84,7 +83,6 @@ function buildHtml(
     padding:2px 6px; border-radius:4px; margin-top:2px;
   }
 
-  /* Threat badge sits top-right of node-box */
   .threat-badge {
     position:absolute; top:-8px; right:-8px;
     width:18px; height:18px; border-radius:50%;
@@ -95,7 +93,6 @@ function buildHtml(
     z-index:10; cursor:default;
   }
 
-  /* Threat legend */
   #threat-legend {
     position:absolute; bottom:12px; left:12px; z-index:999;
     background:white; border:1px solid #e2e8f0; border-radius:10px;
@@ -103,17 +100,44 @@ function buildHtml(
     box-shadow:0 4px 12px rgba(0,0,0,0.1);
     font-size:11px; font-family:system-ui,sans-serif;
   }
-  #threat-legend .legend-title {
-    font-weight:700; color:#1e293b; font-size:12px; margin-bottom:2px;
-  }
-  #threat-legend .legend-row {
-    display:flex; align-items:center; gap:8px; color:#374151;
-  }
-  #threat-legend .legend-dot {
-    width:10px; height:10px; border-radius:50%; flex-shrink:0;
-  }
+  #threat-legend .legend-title { font-weight:700; color:#1e293b; font-size:12px; margin-bottom:2px; }
+  #threat-legend .legend-row   { display:flex; align-items:center; gap:8px; color:#374151; }
+  #threat-legend .legend-dot   { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
-  /* Threat mode pulsing for high-risk edges */
+  /* Annotation popup */
+  .annotation-popup {
+    position: absolute;
+    background: white;
+    border-radius: 10px;
+    padding: 12px;
+    width: 230px;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+    font-family: system-ui, sans-serif;
+    font-size: 12px;
+    z-index: 9999;
+    user-select: none;
+  }
+  .annotation-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    cursor: grab;
+  }
+  .annotation-popup-header:active { cursor: grabbing; }
+  .annotation-popup-title { font-weight: 700; color: #1e293b; font-size: 13px; }
+  .annotation-popup-close {
+    cursor: pointer; font-weight: 700; padding: 2px 6px;
+    color: #64748b; font-size: 16px; line-height: 1;
+  }
+  .annotation-popup textarea {
+    width: 100%; font-size: 11px; border-radius: 6px;
+    padding: 6px; border: 1px solid #e2e8f0; resize: vertical;
+    min-height: 70px; font-family: system-ui, sans-serif;
+    color: #1e293b; outline: none;
+  }
+  .annotation-popup textarea:focus { border-color: #94a3b8; }
+
   @keyframes pulse-stroke {
     0%,100% { stroke-opacity:1; }
     50%      { stroke-opacity:0.4; }
@@ -123,27 +147,29 @@ function buildHtml(
 </head>
 <body>
 <div id="root"></div>
+
 <script src="https://unpkg.com/react@17/umd/react.production.min.js"></script>
 <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/reactflow@11/dist/umd/index.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/reactflow@11/dist/style.css"/>
+
 <script>
-const NODE_COLORS = ${nodeColors};
-const NODE_ICONS  = ${nodeIcons};
-const ZONE_COLORS = ${zoneColors};
-const RAW         = ${data};
-const THREAT_MODE = ${threatMode ? "true" : "false"};
+const NODE_COLORS  = ${nodeColors};
+const NODE_ICONS   = ${nodeIcons};
+const ZONE_COLORS  = ${zoneColors};
+const RAW          = ${data};
+const THREAT_MODE  = ${threatMode ? "true" : "false"};
 
 // ── Threat definitions ───────────────────────────────────────────────────────
 const NODE_THREATS = {
-  database:     { level:'high',   label:'SQL Injection / Data Exposure',    stride:'T,I,D' },
-  server:       { level:'high',   label:'RCE / Auth Bypass',                stride:'S,T,R' },
-  queue:        { level:'medium', label:'Message Tampering / Replay',        stride:'T,R' },
-  cache:        { level:'medium', label:'Cache Poisoning / Info Leakage',    stride:'I,T' },
-  client:       { level:'high',   label:'XSS / CSRF / Client Hijacking',     stride:'S,T' },
-  loadbalancer: { level:'medium', label:'DDoS Target / SSL Termination',     stride:'D,S' },
-  cdn:          { level:'low',    label:'Cache Poisoning',                   stride:'T' },
-  other:        { level:'low',    label:'Review Required',                   stride:'?' },
+  database:     { level:'high',   label:'SQL Injection / Data Exposure',   stride:'T,I,D' },
+  server:       { level:'high',   label:'RCE / Auth Bypass',               stride:'S,T,R' },
+  queue:        { level:'medium', label:'Message Tampering / Replay',       stride:'T,R'   },
+  cache:        { level:'medium', label:'Cache Poisoning / Info Leakage',   stride:'I,T'   },
+  client:       { level:'high',   label:'XSS / CSRF / Client Hijacking',    stride:'S,T'   },
+  loadbalancer: { level:'medium', label:'DDoS Target / SSL Termination',    stride:'D,S'   },
+  cdn:          { level:'low',    label:'Cache Poisoning',                  stride:'T'     },
+  other:        { level:'low',    label:'Review Required',                  stride:'?'     },
 };
 
 const EDGE_THREATS = {
@@ -157,17 +183,8 @@ const EDGE_THREATS = {
   Redis:     { level:'medium', label:'No Auth by Default' },
 };
 
-const THREAT_COLORS = {
-  high:   '#ef4444',
-  medium: '#f59e0b',
-  low:    '#10b981',
-};
-
-const THREAT_LABELS = {
-  high:   '!',
-  medium: '~',
-  low:    '✓',
-};
+const THREAT_COLORS = { high:'#ef4444', medium:'#f59e0b', low:'#10b981' };
+const THREAT_LABELS = { high:'!', medium:'~', low:'✓' };
 
 // ── Layout ───────────────────────────────────────────────────────────────────
 function computeLayout(nodes, edges) {
@@ -177,9 +194,11 @@ function computeLayout(nodes, edges) {
     if (children[e.source]) children[e.source].push(e.target);
     if (e.target in inDegree) inDegree[e.target]++;
   });
+
   const levels = {};
   const queue = nodes.filter(n => inDegree[n.id] === 0).map(n => n.id);
   queue.forEach(id => levels[id] = 0);
+
   let head = 0;
   while (head < queue.length) {
     const cur = queue[head++];
@@ -188,19 +207,20 @@ function computeLayout(nodes, edges) {
     });
   }
   nodes.forEach(n => { if (!(n.id in levels)) levels[n.id] = 0; });
+
   const byLevel = {};
   Object.entries(levels).forEach(([id, lv]) => {
     if (!byLevel[lv]) byLevel[lv] = [];
     byLevel[lv].push(id);
   });
+
   const X_GAP = 180, Y_GAP = 130, positions = {};
   Object.entries(byLevel).forEach(([lv, ids]) => {
     const sorted = [...ids].sort((a, b) => {
-  const na = nodes.find(n => n.id === a);
-  const nb = nodes.find(n => n.id === b);
-  return ((na?.zone && na.zone !== 'null' ? na.zone : '') )
-    .localeCompare((nb?.zone && nb.zone !== 'null' ? nb.zone : ''));
-});
+      const na = RAW.nodes.find(n => n.id === a);
+      const nb = RAW.nodes.find(n => n.id === b);
+      return (na?.zone || '').localeCompare(nb?.zone || '');
+    });
     const totalW = sorted.length * X_GAP;
     sorted.forEach((id, i) => {
       positions[id] = { x: i * X_GAP - totalW / 2 + X_GAP / 2, y: lv * Y_GAP };
@@ -210,7 +230,7 @@ function computeLayout(nodes, edges) {
 }
 
 function computeZoneBounds(zoneId, nodePositions, nodes) {
-  if (!zoneId || zoneId === 'null') return null;   // ← add this line
+  if (!zoneId || zoneId === 'null') return null;
   const members = nodes.filter(n => n.zone === zoneId);
   if (members.length === 0) return null;
   const PAD = 40, NODE_W = 140, NODE_H = 80;
@@ -229,28 +249,52 @@ function App() {
   const { nodes, edges, zones } = RAW;
   const positions = computeLayout(nodes, edges);
 
-  // Zone group nodes
+  // Annotation state — initialised from node.annotation field
+  const [annotations, setAnnotations] = React.useState(() => {
+    const map = {};
+    nodes.forEach(n => { map[n.id] = n.annotation || ''; });
+    return map;
+  });
+
+  // Selected node for annotation popup
+  const [selectedNode, setSelectedNode] = React.useState(null);
+
+  // Draggable popup state
+  const [popupPos, setPopupPos]   = React.useState({ x: 16, y: 16 });
+  const draggingRef               = React.useRef(false);
+  const offsetRef                 = React.useRef({ x: 0, y: 0 });
+
+  React.useEffect(() => {
+    const onMove = (e) => {
+      if (!draggingRef.current) return;
+      setPopupPos({ x: e.clientX - offsetRef.current.x, y: e.clientY - offsetRef.current.y });
+    };
+    const onUp = () => { draggingRef.current = false; };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+    return () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    };
+  }, []);
+
+  // ── Zone group nodes ──
   const zoneNodes = (zones || []).map(zone => {
     const bounds = computeZoneBounds(zone.id, positions, nodes);
     if (!bounds) return null;
-    const colors = ZONE_COLORS[zone.color] || ZONE_COLORS.slate;
-
-    // In threat mode, highlight zones that contain high-risk nodes
+    const colors     = ZONE_COLORS[zone.color] || ZONE_COLORS.slate;
     const hasHighRisk = THREAT_MODE && nodes
       .filter(n => n.zone === zone.id)
       .some(n => NODE_THREATS[n.type]?.level === 'high');
 
     return {
-      id: 'zone-' + zone.id,
-      type: 'group',
+      id: 'zone-' + zone.id, type: 'group',
       position: { x: bounds.x, y: bounds.y },
       style: {
-        width:  bounds.width,
-        height: bounds.height,
+        width: bounds.width, height: bounds.height,
         backgroundColor: hasHighRisk ? 'rgba(239,68,68,0.04)' : colors.bg,
         border: '2px dashed ' + (hasHighRisk ? '#ef4444' : colors.border),
-        borderRadius: 14,
-        zIndex: -1,
+        borderRadius: 14, zIndex: -1,
       },
       data: {
         label: React.createElement('div', {
@@ -265,11 +309,11 @@ function App() {
     };
   }).filter(Boolean);
 
-  // Regular nodes with optional threat badge
+  // ── Regular nodes ──
   const rfNodes = nodes.map(n => {
-    const pos   = positions[n.id] || { x:0, y:0 };
-    const color = NODE_COLORS[n.type] || NODE_COLORS.other;
-    const icon  = NODE_ICONS[n.type]  || NODE_ICONS.other;
+    const pos    = positions[n.id] || { x: 0, y: 0 };
+    const color  = NODE_COLORS[n.type] || NODE_COLORS.other;
+    const icon   = NODE_ICONS[n.type]  || NODE_ICONS.other;
     const threat = NODE_THREATS[n.type];
 
     let finalPos = pos, parentNode = undefined, extent = undefined;
@@ -282,7 +326,6 @@ function App() {
       }
     }
 
-    // Build threat badge element
     const threatBadge = THREAT_MODE && threat
       ? React.createElement('div', {
           className: 'threat-badge',
@@ -291,7 +334,6 @@ function App() {
         }, THREAT_LABELS[threat.level])
       : null;
 
-    // In threat mode, desaturate low-risk nodes slightly
     const nodeStyle = THREAT_MODE
       ? { background: color, opacity: threat?.level === 'low' ? 0.7 : 1 }
       : { background: color };
@@ -304,7 +346,6 @@ function App() {
           React.createElement('div', { className:'node-icon'  }, icon),
           React.createElement('div', { className:'node-label' }, n.label),
           React.createElement('div', { className:'node-type'  }, n.type),
-          // Threat label shown inline below type in threat mode
           THREAT_MODE && threat ? React.createElement('div', {
             style: {
               fontSize:9, marginTop:3, color:'white', opacity:0.9,
@@ -320,28 +361,22 @@ function App() {
     };
   });
 
-  // Edges — coloured by threat level in threat mode
+  // ── Edges ──
   const rfEdges = edges.map((e, i) => {
-    const edgeThreat = THREAT_MODE && e.protocol ? EDGE_THREATS[e.protocol] : null;
-    const baseLabel  = [e.protocol, e.label].filter(Boolean).join(' · ') || undefined;
+    const edgeThreat  = THREAT_MODE && e.protocol ? EDGE_THREATS[e.protocol] : null;
+    const baseLabel   = [e.protocol, e.label].filter(Boolean).join(' · ') || undefined;
     const threatLabel = edgeThreat
       ? (baseLabel ? baseLabel + ' ⚠' : '⚠ ' + edgeThreat.label)
       : baseLabel;
-
-    const strokeColor = edgeThreat
-      ? THREAT_COLORS[edgeThreat.level]
-      : '#94a3b8';
-
-    const strokeWidth = edgeThreat?.level === 'high' ? 2.5
-                      : edgeThreat?.level === 'medium' ? 2
-                      : 1.5;
+    const strokeColor = edgeThreat ? THREAT_COLORS[edgeThreat.level] : '#94a3b8';
+    const strokeWidth = edgeThreat?.level === 'high' ? 2.5 : edgeThreat?.level === 'medium' ? 2 : 1.5;
 
     return {
       id: 'e' + i,
       source: e.source, target: e.target,
       type: 'smoothstep',
       animated: THREAT_MODE
-        ? edgeThreat?.level === 'high'          // pulse high-risk edges
+        ? edgeThreat?.level === 'high'
         : (!!e.protocol && ['WebSocket','AMQP'].includes(e.protocol)),
       markerEnd:   { type:'ArrowClosed', color: strokeColor, width:16, height:16 },
       markerStart: e.bidirectional
@@ -349,11 +384,8 @@ function App() {
         : undefined,
       label: threatLabel,
       style: { stroke: strokeColor, strokeWidth },
-      labelStyle: {
-        fontSize:10, fontWeight:700,
-        fill: edgeThreat ? THREAT_COLORS[edgeThreat.level] : '#475569',
-      },
-      labelBgStyle:   { fill:'#f8fafc', fillOpacity:0.95, rx:4 },
+      labelStyle:   { fontSize:10, fontWeight:700, fill: edgeThreat ? THREAT_COLORS[edgeThreat.level] : '#475569' },
+      labelBgStyle: { fill:'#f8fafc', fillOpacity:0.95, rx:4 },
       labelBgPadding: [4, 6],
     };
   });
@@ -361,45 +393,88 @@ function App() {
   const allNodes = [...zoneNodes, ...rfNodes];
   const { ReactFlow, Background, Controls, MiniMap } = window.ReactFlow;
 
+  // ── Annotation popup ──
+  const selectedRawNode = selectedNode
+    ? nodes.find(n => n.id === selectedNode.id)
+    : null;
+
+  const annotationPopup = selectedRawNode ? React.createElement('div', {
+    className: 'annotation-popup',
+    style: { left: popupPos.x, top: popupPos.y },
+  },
+    // Header / drag handle
+    React.createElement('div', {
+      className: 'annotation-popup-header',
+      onMouseDown: (e) => {
+        draggingRef.current = true;
+        offsetRef.current = { x: e.clientX - popupPos.x, y: e.clientY - popupPos.y };
+        e.preventDefault();
+      },
+    },
+      React.createElement('div', { className: 'annotation-popup-title' },
+        (NODE_ICONS[selectedRawNode.type] || '📦') + ' ' + selectedRawNode.label
+      ),
+      React.createElement('div', {
+        className: 'annotation-popup-close',
+        onClick: () => setSelectedNode(null),
+      }, '×'),
+    ),
+    // Description (read-only)
+    selectedRawNode.description ? React.createElement('div', {
+      style: { fontSize:11, color:'#64748b', marginBottom:6, lineHeight:'1.4' }
+    }, selectedRawNode.description) : null,
+    // Annotation textarea
+    React.createElement('textarea', {
+      value: annotations[selectedRawNode.id] || '',
+      placeholder: 'Add notes…',
+      onChange: (e) => {
+        const val = e.target.value;
+        setAnnotations(prev => ({ ...prev, [selectedRawNode.id]: val }));
+      },
+      onBlur: (e) => {
+        // Send annotation back to React Native / parent
+        const msg = JSON.stringify({ type:'SAVE_NOTE', nodeId: selectedRawNode.id, annotation: e.target.value });
+        if (window.ReactNativeWebView) window.ReactNativeWebView.postMessage(msg);
+        else window.parent.postMessage(msg, '*');
+      },
+    }),
+  ) : null;
+
   return React.createElement('div', { style:{ width:'100%', height:'100%', position:'relative' } },
     React.createElement(ReactFlow, {
       defaultNodes: allNodes,
       defaultEdges: rfEdges,
       fitView: true,
-      fitViewOptions: { padding:0.25 },
+      fitViewOptions: { padding: 0.25 },
       nodesDraggable: true,
       minZoom: 0.1, maxZoom: 2,
       proOptions: { hideAttribution: true },
+      onNodeClick: (_event, node) => {
+        if (node.id.startsWith('zone-')) return;
+        setSelectedNode(node);
+        setPopupPos({ x: 16, y: 16 });
+      },
     },
-     React.createElement(Background, { 
-  color: '#3d6b56',   // subtle grid lines on the board
-  gap: 28, 
-  size: 1.5 
-}),
+      React.createElement(Background, { color:'#3d6b56', gap:28, size:1.5 }),
       React.createElement(Controls,   { showInteractive:false }),
-     React.createElement(MiniMap, {
-  style: { 
-    backgroundColor: '#1e3329', 
-    borderRadius: 8, 
-    border: '1px solid #3d6b56' 
-  },
-  maskColor: 'rgba(30,51,41,0.8)',
-  nodeColor: n => n.id.startsWith('zone-') ? '#3d6b56' : (NODE_COLORS[n.type] || '#94a3b8'),
-}),
+      React.createElement(MiniMap, {
+        style: { backgroundColor:'#1e3329', borderRadius:8, border:'1px solid #3d6b56' },
+        maskColor: 'rgba(30,51,41,0.8)',
+        nodeColor: n => n.id.startsWith('zone-') ? '#3d6b56' : (NODE_COLORS[n.type] || '#94a3b8'),
+      }),
     ),
 
-    // Threat legend — only shown in threat mode
+    // Annotation popup (rendered outside ReactFlow so it sits above everything)
+    annotationPopup,
+
+    // Threat legend
     THREAT_MODE ? React.createElement('div', { id:'threat-legend' },
       React.createElement('div', { className:'legend-title' }, '🛡️ STRIDE Threat View'),
       ['high','medium','low'].map(level =>
         React.createElement('div', { key:level, className:'legend-row' },
-          React.createElement('div', {
-            className:'legend-dot',
-            style:{ background: THREAT_COLORS[level] }
-          }),
+          React.createElement('div', { className:'legend-dot', style:{ background: THREAT_COLORS[level] } }),
           React.createElement('span', null,
-            level === 'high'   ? 'High Risk'   :
-            level === 'medium' ? 'Medium Risk'  : 'Low Risk'
+            level === 'high' ? 'High Risk' : level === 'medium' ? 'Medium Risk' : 'Low Risk'
           ),
         )
       ),
@@ -423,13 +498,29 @@ export default function ArchCanvas({
   edges,
   zones = [],
   threatMode = false,
+  setNodes,
 }: {
   nodes: NodeSchema[];
   edges: EdgeSchema[];
   zones?: ZoneSchema[];
   threatMode?: boolean;
+  setNodes: React.Dispatch<React.SetStateAction<NodeSchema[]>>;
 }) {
+  const webviewRef = useRef<any>(null);
   const html = buildHtml(nodes, edges, zones, threatMode);
+
+  const handleMessage = (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent?.data ?? event.data);
+      if (data.type === "SAVE_NOTE") {
+        setNodes((prev) =>
+          prev.map((n) =>
+            n.id === data.nodeId ? { ...n, annotation: data.annotation } : n,
+          ),
+        );
+      }
+    } catch (_) {}
+  };
 
   if (Platform.OS === "web") {
     return (
@@ -438,6 +529,25 @@ export default function ArchCanvas({
           srcDoc={html}
           style={{ width: "100%", height: "100%", border: "none" }}
           sandbox="allow-scripts allow-same-origin"
+          // Web iframe messaging
+          ref={(frame) => {
+            if (!frame) return;
+            const handler = (e: MessageEvent) => {
+              try {
+                const data = JSON.parse(e.data);
+                if (data.type === "SAVE_NOTE") {
+                  setNodes((prev) =>
+                    prev.map((n) =>
+                      n.id === data.nodeId
+                        ? { ...n, annotation: data.annotation }
+                        : n,
+                    ),
+                  );
+                }
+              } catch (_) {}
+            };
+            window.addEventListener("message", handler);
+          }}
         />
       </View>
     );
@@ -446,9 +556,11 @@ export default function ArchCanvas({
   return (
     <View style={styles.container}>
       <WebView
+        ref={webviewRef}
         source={{ html, baseUrl: "" }}
         originWhitelist={["*"]}
         javaScriptEnabled
+        onMessage={handleMessage}
         style={styles.webview}
       />
     </View>
@@ -456,6 +568,6 @@ export default function ArchCanvas({
 }
 
 const styles = StyleSheet.create({
-  container: { width: "100%", height: 400 },
+  container: { width: "100%", height: 420 },
   webview: { flex: 1 },
 });
