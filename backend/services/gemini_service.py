@@ -54,9 +54,23 @@ async def extract_architecture(image_bytes: bytes, mime_type: str) -> dict:
     )
     raw = response.text.strip().removeprefix("```json").removesuffix("```").strip()
     try:
-        return json.loads(raw)
+        data = json.loads(raw)
     except json.JSONDecodeError:
         raise ValueError(f"Gemini returned invalid JSON: {raw[:200]}")
+
+    for edge in data.get("edges", []):
+        edge["label"] = edge.get("label") or ""
+        edge["protocol"] = edge.get("protocol") or None
+        if "bidirectional" not in edge:
+            edge["bidirectional"] = False
+
+    for node in data.get("nodes", []):
+        node["label"] = node.get("label") or ""
+        node["description"] = node.get("description") or ""
+        node["zone"] = node.get("zone") or None
+
+    return data
+
 
 IMPROVEMENT_PROMPT = """You are a senior software architect. You previously analyzed a diagram and gave this feedback:
 
