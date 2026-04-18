@@ -90,28 +90,39 @@ async def extract_architecture(image_bytes: bytes, mime_type: str) -> dict:
     return data
 
 
-IMPROVEMENT_PROMPT = """You are a senior software architect. You previously analyzed a diagram and gave this feedback:
+IMPROVEMENT_PROMPT = """You are a senior software architect refactoring an existing system architecture.
 
 FEEDBACK:
 {feedback}
 
-Here is the current architecture:
+CURRENT ARCHITECTURE:
 {current_json}
 
-Return ONLY valid JSON — no markdown, no explanation — with this exact schema:
+Refactoring philosophy:
+- Prefer SIMPLIFICATION over addition
+- Only add components if they directly resolve feedback
+- Maximum 5 structural changes total
+- Add at most 2 new nodes
+- Prefer modifying existing nodes
+- Removing components is allowed
+- Preserve original intent and scale
+- Do NOT redesign the system
+
+Allowed change types:
+- modify existing node
+- merge components
+- improve connections/protocols
+- remove unnecessary parts
+- add minimal missing infrastructure
+
+Return ONLY valid JSON:
 {{
   "nodes": [{{"id": "string", "type": "string", "label": "string", "description": "string"}}],
   "edges": [{{"source": "string", "target": "string", "label": "string"}}],
   "feedback": ["string"],
   "improvements": ["string"]
 }}
-
-Rules:
-- Apply your feedback: add missing components, remove single points of failure, add security layers, etc.
-- improvements should list 3-5 concrete changes you made vs the original
-- feedback should now reflect remaining concerns on the NEW diagram
-- Keep all existing id values stable where possible; add new nodes with new unique ids
-Return ONLY the JSON object."""
+"""
 
 
 # This function takes the current nodes, edges, and feedback for an architecture diagram, formats them into a prompt,
