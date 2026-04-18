@@ -52,3 +52,44 @@ async def extract_architecture(image_bytes: bytes, mime_type: str) -> dict:
         return json.loads(raw)
     except json.JSONDecodeError:
         raise ValueError(f"Gemini returned invalid JSON: {raw[:200]}")
+
+IMPROVEMENT_PROMPT = """You are a senior software architect. You previously analyzed a diagram and gave this feedback:
+
+FEEDBACK:
+{feedback}
+
+Here is the current architecture:
+{current_json}
+
+Return ONLY valid JSON — no markdown, no explanation — with this exact schema:
+{{
+  "nodes": [{{"id": "string", "type": "string", "label": "string", "description": "string"}}],
+  "edges": [{{"source": "string", "target": "string", "label": "string"}}],
+  "feedback": ["string"],
+  "improvements": ["string"]
+}}
+
+Rules:
+- Apply your feedback: add missing components, remove single points of failure, add security layers, etc.
+- improvements should list 3-5 concrete changes you made vs the original
+- feedback should now reflect remaining concerns on the NEW diagram
+- Keep all existing id values stable where possible; add new nodes with new unique ids
+Return ONLY the JSON object."""
+
+# This function takes the current nodes, edges, and feedback for an architecture diagram, formats them into a prompt, and sends it to the Gemini API to receive an improved architecture diagram based on the feedback. It returns the new set of nodes, edges, feedback, and a list of specific improvements made.
+async def improve_architecture(nodes: list, edges: list, feedback: list[str]) -> dict:
+    import json as _json
+    current_json = _json.dumps({"nodes": nodes, "edges": edges}, indent=2)
+    filled = IMPROVEMENT_PROMPT.format(
+        feedback="\n".join(f"- {f}" for f in feedback),
+        current_json=current_json,
+    )
+    response = client.models.generate_content(
+        model="gemini-2.5-flash-lite",
+        contents=[filled],
+    )
+    raw = response.text.strip().removeprefix("```json").removesuffix("```").strip()
+    try:
+        return _json.loads(raw)
+    except _json.JSONDecodeError:
+        raise ValueError(f"Gemini returned invalid JSON: {raw[:200]}")

@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 from database import init_db
 from models import ArchitectureDoc
 import os, shutil, uuid
+from pydantic import BaseModel
 
 # Directory to store uploaded images
 UPLOAD_DIR = "uploads"
@@ -84,3 +85,19 @@ async def delete_history_item(doc_id: str):
             os.remove(path)
     await doc.delete()
     return {"ok": True}
+
+# Data model for the request body of the improve architecture endpoint, containing the current nodes, edges, and feedback for an architecture diagram
+class ImproveRequest(BaseModel):
+    nodes: list
+    edges: list
+    feedback: list[str]
+
+# Endpoint to improve an existing architecture diagram based on feedback, returning a new set of nodes and edges representing the improved architecture
+@app.post("/api/improve-architecture")
+async def improve_architecture_endpoint(body: ImproveRequest):
+    try:
+        from gemini_service import improve_architecture
+        result = await improve_architecture(body.nodes, body.edges, body.feedback)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

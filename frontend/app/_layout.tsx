@@ -1,5 +1,6 @@
 import { Stack } from 'expo-router'
 
+// This is the root layout for the app. It defines the navigation structure and shared components (if any).
 export default function RootLayout() {
   return (
     <Stack>

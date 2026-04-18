@@ -9,12 +9,14 @@ import { HistoryItem } from "../types/chart.types";
 
 const BASE = "http://localhost:8000";
 
+// This screen displays the history of scanned architecture diagrams, allowing users to view details or delete entries.
 export default function HistoryScreen() {
   const [items, setItems] = useState<HistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const router = useRouter();
 
+  // Load history items from the backend
   const load = useCallback(async () => {
     try {
       const data = await getHistory();
@@ -28,10 +30,13 @@ export default function HistoryScreen() {
     }
   }, []);
 
+  // Load history on component mount
   useEffect(() => { load(); }, [load]);
 
+  // Handler for pull-to-refresh action
   const onRefresh = () => { setRefreshing(true); load(); };
 
+  // Handler for deleting a history item, with confirmation prompt
   const handleDelete = (id: string) => {
     Alert.alert("Delete scan?", "This cannot be undone.", [
       { text: "Cancel", style: "cancel" },
@@ -49,13 +54,22 @@ export default function HistoryScreen() {
     ]);
   };
 
+  // Handler for opening a history item to view its details
   const handleOpen = (item: HistoryItem) => {
-    router.push({
-      pathname: "/result",
-      params: { schema: JSON.stringify({ nodes: item.nodes, edges: item.edges, feedback: item.feedback }) },
-    });
-  };
+  router.push({
+    pathname: "/result",
+    params: {
+      schema: JSON.stringify({
+        nodes: item.nodes,
+        edges: item.edges,
+        feedback: item.feedback,
+        image_filename: item.image_filename,  // ← add this
+      }),
+    },
+  });
+};
 
+  // Show loading indicator while fetching data
   if (loading) {
     return (
       <View style={styles.center}>
@@ -64,6 +78,7 @@ export default function HistoryScreen() {
     );
   }
 
+  // Show empty state if there are no history items
   if (items.length === 0) {
     return (
       <View style={styles.center}>
@@ -74,6 +89,7 @@ export default function HistoryScreen() {
     );
   }
 
+  // Render the list of history items
   return (
     <FlatList
       data={items}
@@ -122,6 +138,7 @@ export default function HistoryScreen() {
   );
 }
 
+// Styles for the History screen components
 const styles = StyleSheet.create({
   center: { flex: 1, alignItems: "center", justifyContent: "center", gap: 8 },
   emptyIcon: { fontSize: 48, marginBottom: 8 },
