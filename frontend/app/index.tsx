@@ -167,7 +167,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
-    gap: 16,
+    gap: 12,
   },
   historyBtn: {
     position: "absolute",
@@ -249,26 +249,33 @@ const styles = StyleSheet.create({
   },
   clearBtnText: { color: "white", fontSize: 12, fontWeight: "700" },
 
-  btnRow: { flexDirection: "row", gap: 10 },
+  // ── Fixed button area ──────────────────────────────────────────
+  btnRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: 300, // match drop zone width
+  },
   btn: {
     flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
+    paddingVertical: 12, // less tall
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.bgDeep,
     borderWidth: 1.5,
     borderColor: theme.colors.border,
     alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row", // icon + text side by side
+    gap: 6,
   },
   btnSecondary: {},
   btnText: {
     fontFamily: theme.fonts.bodyMed,
-    fontSize: 16,
+    fontSize: 14,
     color: theme.colors.text,
   },
 
   analyzeBtn: {
-    width: "100%",
+    width: 300, // match drop zone width
     paddingVertical: 16,
     borderRadius: theme.radius.md,
     backgroundColor: theme.colors.board,
@@ -326,14 +333,15 @@ const styles = StyleSheet.create({
     color: theme.colors.accentRed,
     marginTop: 4,
   },
+
   duplicateNote: {
+    width: 300,
     backgroundColor: "#fffbeb",
     borderWidth: 1,
     borderColor: "#fde68a",
     borderRadius: theme.radius.md,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    width: "100%",
   },
   duplicateText: {
     fontFamily: theme.fonts.body,
