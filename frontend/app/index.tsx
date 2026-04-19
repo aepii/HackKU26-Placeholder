@@ -124,7 +124,7 @@ export default function HomeScreen() {
           style={[styles.btn, styles.btnSecondary]}
           onPress={() => pickImage(false)}
         >
-          <Text style={styles.btnText}>🖼 Library</Text>
+          <Text style={styles.btnText}>📚 Library</Text>
         </TouchableOpacity>
       </View>
 
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   btnSecondary: {},
   btnText: {
     fontFamily: theme.fonts.bodyMed,
-    fontSize: 14,
+    fontSize: 16,
     color: theme.colors.text,
   },
 
