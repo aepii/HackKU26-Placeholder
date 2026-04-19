@@ -4,6 +4,7 @@ from typing import Optional, Annotated
 
 
 class NodeSchema(BaseModel):
+    """Represents a node in the architecture diagram."""
     id: str
     type: str
     label: str = ""
@@ -22,12 +23,13 @@ class NodeSchema(BaseModel):
 
 
 class EdgeSchema(BaseModel):
+    """Represents an edge/connection between nodes in the architecture diagram."""
     source: str
     target: str
     label: str = ""
     protocol: Optional[str] = None
     bidirectional: Optional[bool] = False
-
+    
     @field_validator("label", mode="before")
     @classmethod
     def coerce_label(cls, v):
@@ -40,12 +42,14 @@ class EdgeSchema(BaseModel):
 
 
 class ZoneSchema(BaseModel):
+    """Represents a zone in the architecture diagram."""
     id: str
     label: str = ""
     color: str = "slate"
 
 
 class ArchitectureDoc(Document):
+    """Represents an architecture diagram document stored in MongoDB."""
     nodes: list[NodeSchema]
     edges: list[EdgeSchema]
     zones: list[ZoneSchema] = []
@@ -58,6 +62,7 @@ class ArchitectureDoc(Document):
     created_at: Optional[str] = None
 
     class Settings:
+        """Beanie document settings."""
         name = "architectures"
         indexes = [
             "share_token",
