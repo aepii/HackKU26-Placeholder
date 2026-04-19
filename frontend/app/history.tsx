@@ -7,10 +7,10 @@ import {
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
-  Alert,
   RefreshControl,
   TextInput,
 } from "react-native";
+import { confirm, showAlert } from "../utils/alert";
 import { useRouter } from "expo-router";
 import { getHistory, deleteHistoryItem, searchHistory } from "../api";
 import { HistoryItem } from "../types/chart.types";
@@ -53,7 +53,7 @@ export default function HistoryScreen() {
       const data = await getHistory();
       setItems(data.reverse());
     } catch {
-      Alert.alert("Error", "Could not load history.");
+      showAlert("Error", "Could not load history.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -69,25 +69,22 @@ export default function HistoryScreen() {
     load();
   };
 
-  const handleDelete = (id: string) => {
-    Alert.alert("Delete scan?", "This cannot be undone.", [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await deleteHistoryItem(id);
-            setItems((prev) => prev.filter((i) => i.id !== id));
-            if (searchResults) {
-              setSearchResults((prev) => prev!.filter((i) => i.id !== id));
-            }
-          } catch {
-            Alert.alert("Error", "Could not delete item.");
-          }
-        },
-      },
-    ]);
+  const handleDelete = async (id: string) => {
+    const accepted = await confirm("Delete scan?", "This cannot be undone.");
+
+    if (!accepted) return;
+
+    try {
+      await deleteHistoryItem(id);
+
+      setItems((prev) => prev.filter((i) => i.id !== id));
+
+      if (searchResults) {
+        setSearchResults((prev) => prev!.filter((i) => i.id !== id));
+      }
+    } catch {
+      showAlert("Error", "Could not delete item.");
+    }
   };
 
   const handleOpen = (item: HistoryItem) => {
@@ -101,6 +98,7 @@ export default function HistoryScreen() {
           feedback: item.feedback,
           summary: item.summary,
           image_filename: item.image_filename,
+          image_url: item.image_url,
           share_token: item.share_token,
         }),
       },
