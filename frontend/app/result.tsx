@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { useState } from "react";
 import {
   View,
@@ -8,6 +9,10 @@ import {
   StyleSheet,
   Image,
 } from "react-native";
+=======
+import { View, ScrollView, StyleSheet } from "react-native";
+import { useState } from "react";
+>>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
 import { useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
 import { ArchSchema, ImprovedSchema, NodeSchema } from "../types/chart.types";
@@ -23,7 +28,17 @@ const SHARE_BASE = "http://localhost:8081/share";
 
 export default function ResultScreen() {
   const { schema: raw } = useLocalSearchParams<{ schema: string }>();
-  const schema: ArchSchema = JSON.parse(raw);
+
+  const initialSchema: ArchSchema = raw
+    ? JSON.parse(raw)
+    : {
+        nodes: [],
+        edges: [],
+        feedback: [],
+      };
+
+  const [nodes, setNodes] = useState(initialSchema.nodes);
+  const [edges] = useState(initialSchema.edges);
 
   const [nodes, setNodes] = useState<NodeSchema[]>(schema.nodes);
   const [improved, setImproved] = useState<ImprovedSchema | null>(null);
@@ -116,6 +131,7 @@ export default function ResultScreen() {
 
       {/* Canvas */}
       <View style={styles.canvasCard}>
+<<<<<<< HEAD
         {showOriginal && (schema.image_url || schema.image_filename) ? (
           <Image
             source={{
@@ -172,6 +188,11 @@ export default function ResultScreen() {
       {improved && <ImprovementsPanel improvements={improved.improvements} />}
       <FeedbackPanel feedback={currentFeedback} />
       <AskPanel nodes={nodes} edges={currentEdges} zones={currentZones} />
+=======
+        <ArchCanvas nodes={nodes} edges={edges} setNodes={setNodes} />
+      </View>
+      <FeedbackPanel feedback={initialSchema.feedback} />
+>>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
     </ScrollView>
   );
 }

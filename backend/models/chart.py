@@ -7,6 +7,7 @@ class NodeSchema(BaseModel):
     """Represents a node in the architecture diagram."""
     id: str
     type: str
+<<<<<<< HEAD
     label: str = ""
     description: str = ""
     zone: Optional[str] = None
@@ -26,6 +27,11 @@ class NodeSchema(BaseModel):
     @classmethod
     def coerce_annotation(cls, v):
         return v or None
+=======
+    label: str
+    description: str
+    
+>>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
 
 
 class EdgeSchema(BaseModel):

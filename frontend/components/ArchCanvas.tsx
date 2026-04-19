@@ -56,6 +56,7 @@ function buildHtml(
   * { margin:0; padding:0; box-sizing:border-box; }
   body { width:100vw; height:100vh; background:#2d4a3e; overflow:hidden; }
   #root { width:100%; height:100%; }
+<<<<<<< HEAD
 
   .node-box {
     position: relative;
@@ -143,6 +144,24 @@ function buildHtml(
     50%      { stroke-opacity:0.4; }
   }
   .threat-edge-high { animation: pulse-stroke 1.5s ease-in-out infinite; }
+=======
+  .node-box {
+    padding:8px 14px;
+    border-radius:8px;
+    font-family:system-ui,sans-serif;
+    font-size:12px;
+    font-weight:600;
+    color:white;
+    text-align:center;
+    min-width:110px;
+    box-shadow:0 2px 6px rgba(0,0,0,0.15);
+  }
+  .node-type {
+    font-size:10px;
+    opacity:0.75;
+    margin-top:3px;
+  }
+>>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
 </style>
 </head>
 <body>
@@ -152,6 +171,13 @@ function buildHtml(
 <script src="https://unpkg.com/react-dom@17/umd/react-dom.production.min.js"></script>
 <script src="https://unpkg.com/reactflow@11/dist/umd/index.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/reactflow@11/dist/style.css"/>
+<<<<<<< HEAD
+=======
+
+<script>
+const COLORS = ${colors};
+const RAW = ${data};
+>>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
 
 <script>
 const NODE_COLORS  = ${nodeColors};
@@ -203,9 +229,13 @@ function computeLayout(nodes, edges) {
   while (head < queue.length) {
     const cur = queue[head++];
     (children[cur] || []).forEach(child => {
-      if (!(child in levels)) { levels[child] = levels[cur] + 1; queue.push(child); }
+      if (!(child in levels)) {
+        levels[child] = levels[cur] + 1;
+        queue.push(child);
+      }
     });
   }
+
   nodes.forEach(n => { if (!(n.id in levels)) levels[n.id] = 0; });
 
   const byLevel = {};
@@ -214,6 +244,7 @@ function computeLayout(nodes, edges) {
     byLevel[lv].push(id);
   });
 
+<<<<<<< HEAD
   const X_GAP = 180, Y_GAP = 130, positions = {};
   Object.entries(byLevel).forEach(([lv, ids]) => {
     const sorted = [...ids].sort((a, b) => {
@@ -224,11 +255,23 @@ function computeLayout(nodes, edges) {
     const totalW = sorted.length * X_GAP;
     sorted.forEach((id, i) => {
       positions[id] = { x: i * X_GAP - totalW / 2 + X_GAP / 2, y: lv * Y_GAP };
+=======
+  const X_GAP = 160, Y_GAP = 110, positions = {};
+  Object.entries(byLevel).forEach(([lv, ids]) => {
+    const totalW = ids.length * X_GAP;
+    ids.forEach((id, i) => {
+      positions[id] = {
+        x: i * X_GAP - totalW / 2 + X_GAP / 2,
+        y: lv * Y_GAP
+      };
+>>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
     });
   });
+
   return positions;
 }
 
+<<<<<<< HEAD
 function computeZoneBounds(zoneId, nodePositions, nodes) {
   if (!zoneId || zoneId === 'null') return null;
   const members = nodes.filter(n => n.zone === zoneId);
@@ -482,6 +525,170 @@ function App() {
         style:{ marginTop:4, fontSize:10, color:'#94a3b8', borderTop:'1px solid #e2e8f0', paddingTop:6 }
       }, 'Spoofing · Tampering · Repudiation · Info Disclosure · DoS · Elevation')
     ) : null,
+=======
+function App() {
+  const positions = computeLayout(RAW.nodes, RAW.edges);
+
+  const [selectedNode, setSelectedNode] = React.useState(null);
+
+  const [annotations, setAnnotations] = React.useState(() => {
+    const map = {};
+    RAW.nodes.forEach(n => {
+      map[n.id] = n.description || '';
+    });
+    return map;
+  });
+
+  // ✅ draggable state
+  const [popupPos, setPopupPos] = React.useState({ x: 10, y: 10 });
+  const draggingRef = React.useRef(false);
+  const offsetRef = React.useRef({ x: 0, y: 0 });
+
+  React.useEffect(() => {
+    const handleMouseMove = (e) => {
+      if (!draggingRef.current) return;
+      setPopupPos({
+        x: e.clientX - offsetRef.current.x,
+        y: e.clientY - offsetRef.current.y
+      });
+    };
+
+    const handleMouseUp = () => {
+      draggingRef.current = false;
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, []);
+
+  const rfNodes = RAW.nodes.map(n => ({
+    id: n.id,
+    position: positions[n.id] || { x: 0, y: 0 },
+    data: {
+      label: React.createElement('div', {
+        className: 'node-box',
+        style: { background: COLORS[n.type] || COLORS.other }
+      },
+        React.createElement('div', null, n.label),
+        React.createElement('div', { className: 'node-type' }, n.type)
+      )
+    },
+    style: { background: 'transparent', border: 'none', padding: 0, pointerEvents: 'all', zIndex: 10 },
+  }));
+
+  const rfEdges = RAW.edges.map((e, i) => ({
+    id: 'e' + i,
+    source: e.source,
+    target: e.target,
+    label: e.label,
+    animated: true,
+    style: { stroke: '#94a3b8', pointerEvents: 'none' },
+    labelStyle: { fontSize: 10, fill: '#64748b' },
+  }));
+
+  const { ReactFlow, Background, Controls } = window.ReactFlow;
+
+  return React.createElement('div', { style: { width:'100%', height:'100%', position:'relative' } },
+
+    React.createElement(ReactFlow, {
+      defaultNodes: rfNodes,
+      defaultEdges: rfEdges,
+      fitView: true,
+      nodesDraggable: true,
+
+      onNodeClick: (event, node) => {
+        setSelectedNode(node);
+
+        setPopupPos({
+          x: 10,
+          y: 10
+        });
+      }
+
+    },
+      React.createElement(Background, { gap: 20 }),
+      React.createElement(Controls)
+    ),
+
+    selectedNode && React.createElement(
+      'div',
+      {
+        style: {
+          position: 'absolute',
+          left: popupPos.x,
+          top: popupPos.y,
+          background: 'white',
+          padding: '10px',
+          borderRadius: '8px',
+          width: '220px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+          fontSize: '12px',
+          zIndex: 999,
+          cursor: draggingRef.current ? 'grabbing' : 'default',
+          userSelect: 'none'
+        }
+      },
+
+      // ✅ header with close button
+      React.createElement('div', {
+        style: {
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '6px',
+          cursor: 'grab'
+        },
+        onMouseDown: (e) => {
+          draggingRef.current = true;
+          offsetRef.current = {
+            x: e.clientX - popupPos.x,
+            y: e.clientY - popupPos.y
+          };
+        }
+      },
+        React.createElement('div', { style: { fontWeight: '600' } }, selectedNode.data.label.props.children[0].props.children),
+
+        React.createElement('div', {
+          style: {
+            cursor: 'pointer',
+            fontWeight: '700',
+            padding: '2px 6px'
+          },
+          onClick: () => setSelectedNode(null)
+        }, '×')
+      ),
+
+      React.createElement('textarea', {
+        value: annotations[selectedNode.id] || '',
+        placeholder: 'Add notes...',
+        style: {
+          width: '100%',
+          fontSize: '11px',
+          borderRadius: '6px',
+          padding: '4px'
+        },
+        onChange: (e) => {
+          const val = e.target.value;
+          setAnnotations(prev => ({
+            ...prev,
+            [selectedNode.id]: val
+          }));
+        },
+        onBlur: (e) => {
+          window.parent.postMessage(JSON.stringify({
+            type: 'SAVE_NOTE',
+            nodeId: selectedNode.id,
+            annotation: e.target.value
+          }), "*");
+        }
+      })
+    )
+>>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
   );
 }
 
@@ -489,6 +696,7 @@ setTimeout(() => {
   ReactDOM.render(React.createElement(App), document.getElementById('root'));
 }, 50);
 </script>
+
 </body>
 </html>`;
 }
@@ -496,6 +704,7 @@ setTimeout(() => {
 export default function ArchCanvas({
   nodes,
   edges,
+<<<<<<< HEAD
   zones = [],
   threatMode = false,
   setNodes,
@@ -523,10 +732,23 @@ export default function ArchCanvas({
   };
 
   if (Platform.OS === "web") {
+=======
+  setNodes
+}: {
+  nodes: NodeSchema[],
+  edges: EdgeSchema[],
+  setNodes: React.Dispatch<React.SetStateAction<NodeSchema[]>>
+}) {
+  const webviewRef = useRef<any>(null)
+  const html = buildHtml(nodes, edges)
+
+  if (Platform.OS === 'web') {
+>>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
     return (
       <View style={styles.container}>
         <iframe
           srcDoc={html}
+<<<<<<< HEAD
           style={{ width: "100%", height: "100%", border: "none" }}
           sandbox="allow-scripts allow-same-origin"
           // Web iframe messaging
@@ -551,16 +773,42 @@ export default function ArchCanvas({
         />
       </View>
     );
+=======
+          style={{ width: '100%', height: '100%', border: 'none' }}
+          sandbox="allow-scripts allow-same-origin"
+        />
+      </View>
+    )
+>>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
   }
 
   return (
     <View style={styles.container}>
       <WebView
         ref={webviewRef}
+<<<<<<< HEAD
         source={{ html, baseUrl: "" }}
         originWhitelist={["*"]}
         javaScriptEnabled
         onMessage={handleMessage}
+=======
+        source={{ html }}
+        originWhitelist={['*']}
+        javaScriptEnabled
+        onMessage={(event) => {
+          const data = JSON.parse(event.nativeEvent.data)
+
+          if (data.type === 'SAVE_NOTE') {
+            setNodes(prev =>
+              prev.map(n =>
+                n.id === data.nodeId
+                  ? { ...n, annotation: data.annotation }
+                  : n
+              )
+            )
+          }
+        }}
+>>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
         style={styles.webview}
       />
     </View>
