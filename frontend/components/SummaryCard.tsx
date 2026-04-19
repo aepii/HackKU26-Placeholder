@@ -20,14 +20,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   label: {
-    fontFamily: theme.fonts.bodyMed,
+    fontFamily: theme.fonts.hand,
     fontSize: 11,
     color: theme.colors.accent,
     textTransform: "uppercase",
     letterSpacing: 0.6,
   },
   text: {
-    fontFamily: theme.fonts.hand,
+    fontFamily: theme.fonts.body,
     fontSize: 17,
     color: theme.colors.chalk,
     lineHeight: 24,

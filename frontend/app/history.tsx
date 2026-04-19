@@ -180,9 +180,12 @@ export default function HistoryScreen() {
             onPress={() => handleOpen(item)}
           >
             {/* Thumbnail */}
-            {item.image_filename ? (
+            {item.image_url || item.image_filename ? (
               <Image
-                source={{ uri: `${BASE}/uploads/${item.image_filename}` }}
+                source={{
+                  uri:
+                    item.image_url ?? `${BASE}/uploads/${item.image_filename}`,
+                }}
                 style={styles.thumb}
                 resizeMode="cover"
               />

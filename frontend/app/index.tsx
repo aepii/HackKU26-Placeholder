@@ -21,32 +21,33 @@ export default function HomeScreen() {
   const [loadingStep, setLoadingStep] = useState<string>("");
   const [rejection, setRejection] = useState<string | null>(null);
 
+  const [duplicate, setDuplicate] = useState(false);
+
   const analyze = async () => {
     if (!imageUri) return;
-
     setLoading(true);
+    setDuplicate(false);
     setRejection(null);
-    setLoadingStep("Checking diagram...");
-
     try {
       const schema = await validateArchitecture(imageUri, webFile ?? undefined);
-
-      setLoadingStep("Extracting architecture...");
-
+      if (schema.duplicate) {
+        setDuplicate(true);
+        router.push({
+          pathname: "/result",
+          params: { schema: JSON.stringify(schema) },
+        });
+        return;
+      }
       router.push({
         pathname: "/result",
         params: { schema: JSON.stringify(schema) },
       });
     } catch (e: any) {
-      const detail = e.response?.data?.detail || "Something went wrong";
-
-      setRejection(detail);
+      setRejection(e.response?.data?.detail || "Something went wrong");
     } finally {
       setLoading(false);
-      setLoadingStep("");
     }
   };
-
   const router = useRouter();
 
   const pickImage = async (useCamera: boolean) => {
@@ -126,6 +127,14 @@ export default function HomeScreen() {
           <Text style={styles.btnText}>🖼 Library</Text>
         </TouchableOpacity>
       </View>
+
+      {duplicate && (
+        <View style={styles.duplicateNote}>
+          <Text style={styles.duplicateText}>
+            ♻️ Same image detected — showing cached result
+          </Text>
+        </View>
+      )}
 
       {imageUri && (
         <TouchableOpacity
@@ -316,5 +325,20 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: theme.colors.accentRed,
     marginTop: 4,
+  },
+  duplicateNote: {
+    backgroundColor: "#fffbeb",
+    borderWidth: 1,
+    borderColor: "#fde68a",
+    borderRadius: theme.radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    width: "100%",
+  },
+  duplicateText: {
+    fontFamily: theme.fonts.body,
+    fontSize: 13,
+    color: "#92400e",
+    textAlign: "center",
   },
 });

@@ -7,12 +7,16 @@ from services import (
     generate_share_token,
     current_utc_timestamp,
     generate_summary,
+    ask_about_architecture,
+    upload_image,
 )
 from services.gemini_service import improve_architecture
 from pydantic import BaseModel
 from beanie import PydanticObjectId
 import os
 import uuid
+import hashlib
+
 
 UPLOAD_DIR = "uploads"
 router = APIRouter(prefix="/api", tags=["architecture"])
@@ -23,6 +27,17 @@ async def validate_architecture(file: UploadFile = File(...)):
     try:
         image_bytes = await file.read()
         mime_type = file.content_type or "image/jpeg"
+
+        image_hash = hashlib.sha256(image_bytes).hexdigest()
+        existing = await ArchitectureDoc.find_one(
+            ArchitectureDoc.image_hash == image_hash
+        )
+        if existing:
+            return {
+                **existing.model_dump(),
+                "id": str(existing.id),
+                "duplicate": True,
+            }
 
         gate = await is_architecture_diagram(image_bytes, mime_type)
         if not gate.get("is_architecture", False):
@@ -35,13 +50,9 @@ async def validate_architecture(file: UploadFile = File(...)):
 
         ext = os.path.splitext(file.filename or "photo.jpg")[1] or ".jpg"
         saved_name = f"{uuid.uuid4().hex}{ext}"
-        save_path = os.path.join(UPLOAD_DIR, saved_name)
-        with open(save_path, "wb") as f:
-            f.write(image_bytes)
+        image_url = await upload_image(image_bytes, saved_name)
 
         result = await extract_architecture(image_bytes, mime_type)
-
-        # Generate summary from extracted data
         summary = await generate_summary(
             result.get("nodes", []),
             result.get("edges", []),
@@ -52,6 +63,8 @@ async def validate_architecture(file: UploadFile = File(...)):
             **result,
             summary=summary,
             image_filename=saved_name,
+            image_url=image_url,
+            image_hash=image_hash,
             share_token=generate_share_token(),
             created_at=current_utc_timestamp(),
         )
@@ -61,10 +74,12 @@ async def validate_architecture(file: UploadFile = File(...)):
             **result,
             "id": str(doc.id),
             "image_filename": saved_name,
+            "image_url": image_url,
             "share_token": doc.share_token,
             "summary": summary,
             "confidence": gate.get("confidence", 1.0),
             "confidence_reason": gate.get("reason", ""),
+            "duplicate": False,
         }
 
     except HTTPException:
@@ -207,8 +222,6 @@ class AskRequest(BaseModel):
 @router.post("/ask")
 async def ask_architecture(body: AskRequest):
     try:
-        from services.gemini_service import ask_about_architecture
-
         answer = await ask_about_architecture(
             body.nodes, body.edges, body.zones, body.question
         )

@@ -52,6 +52,8 @@ class ArchitectureDoc(Document):
     feedback: list[str]
     summary: Optional[str] = None
     image_filename: Optional[str] = None
+    image_url: Optional[str] = None
+    image_hash: Optional[str] = None
     share_token: Optional[str] = None
     created_at: Optional[str] = None
 
@@ -60,4 +62,5 @@ class ArchitectureDoc(Document):
         indexes = [
             "share_token",
             "created_at",
+            "image_hash",
         ]

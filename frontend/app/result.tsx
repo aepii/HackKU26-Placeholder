@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   StyleSheet,
+  Image,
 } from "react-native";
 import { useLocalSearchParams } from "expo-router";
 import * as Clipboard from "expo-clipboard";
@@ -27,6 +28,8 @@ export default function ResultScreen() {
   const [improved, setImproved] = useState<ImprovedSchema | null>(null);
   const [improving, setImproving] = useState(false);
   const [threatMode, setThreatMode] = useState(false);
+
+  const [showOriginal, setShowOriginal] = useState(false);
 
   const current = improved ?? schema;
 
@@ -87,14 +90,37 @@ export default function ResultScreen() {
         </View>
       )}
 
+      {(schema.image_url || schema.image_filename) && (
+        <TouchableOpacity
+          style={styles.originalToggle}
+          onPress={() => setShowOriginal((s) => !s)}
+        >
+          <Text style={styles.originalToggleText}>
+            {showOriginal ? "📊 Show Diagram" : "📷 Show Original"}
+          </Text>
+        </TouchableOpacity>
+      )}
+
       {/* Canvas — full chalkboard */}
       <View style={styles.canvasCard}>
-        <ArchCanvas
-          nodes={current.nodes}
-          edges={current.edges}
-          zones={current.zones ?? []}
-          threatMode={threatMode}
-        />
+        {showOriginal && (schema.image_url || schema.image_filename) ? (
+          <Image
+            source={{
+              uri:
+                schema.image_url ??
+                `http://localhost:8000/uploads/${schema.image_filename}`,
+            }}
+            style={{ width: "100%", height: "100%" }}
+            resizeMode="contain"
+          />
+        ) : (
+          <ArchCanvas
+            nodes={current.nodes}
+            edges={current.edges}
+            zones={current.zones ?? []}
+            threatMode={threatMode}
+          />
+        )}
       </View>
 
       {current.summary && <SummaryCard summary={current.summary} />}
@@ -230,6 +256,20 @@ const styles = StyleSheet.create({
   confEmoji: {
     fontFamily: theme.fonts.bodyBold,
     fontSize: 12,
+    color: theme.colors.textMuted,
+  },
+  originalToggle: {
+    alignSelf: "flex-end",
+    backgroundColor: theme.colors.bgDeep,
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  originalToggleText: {
+    fontFamily: theme.fonts.bodyMed,
+    fontSize: 13,
     color: theme.colors.textMuted,
   },
 });

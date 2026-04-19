@@ -15,6 +15,7 @@ async def lifespan(app: FastAPI):
     await init_db()
     yield
 
+
 app = FastAPI(title="System Architect Validator", lifespan=lifespan)
 
 app.add_middleware(
@@ -24,8 +25,6 @@ app.add_middleware(
     allow_headers=["*"],
     allow_credentials=True,
 )
-
-app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 app.include_router(architecture_router)
 app.include_router(share_router)

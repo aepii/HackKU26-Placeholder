@@ -24,9 +24,11 @@ export interface ArchSchema {
   feedback: string[];
   summary?: string;
   image_filename?: string;
+  image_url?: string;
   share_token?: string;
   confidence?: number;
   confidence_reason?: string;
+  duplicate?: boolean;
 }
 
 // Represents a single item in the history of uploaded architecture diagrams, including its extracted nodes, edges, feedback, and associated image filename (if any)
@@ -38,6 +40,7 @@ export interface HistoryItem {
   feedback: string[];
   summary?: string;
   image_filename: string | null;
+  image_url?: string;
   share_token?: string;
 }
 
