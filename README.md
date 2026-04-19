@@ -1,117 +1,130 @@
-# Project Setup Guide
+# ArchLens
 
-## 🐍 1. Backend Setup (Python/FastAPI)
+Photograph a whiteboard architecture diagram. Get instant AI analysis, threat modeling, and expert feedback.
 
-### Create and Activate the Virtual Environment
-
-You must use a virtual environment to avoid conflicting packages.
-
-**For Windows (PowerShell):**
-```powershell
-python -m venv venv
-.\venv\Scripts\activate
-```
-
-**For Mac/Linux (bash/zsh):**
-```bash
-python3 -m venv venv
-source venv/bin/activate
-```
-
-> You will know it worked if you see `(venv)` at the beginning of your terminal prompt.
-
-### Install Dependencies
-
-Once the virtual environment is active, install the required Python packages:
-
-```bash
-pip install -r requirements.txt
-```
-
-### Configure Environment Variables
-
-You need the MongoDB Atlas connection string to connect to the database.
-
-1. Create a file named `.env` inside the `backend/` folder.
-2. Add the connection string provided by the team lead:
-
-```
-MONGODB_URI="mongodb+srv://<username>:<password>@cluster0.mongodb.net/hackathon_db?retryWrites=true&w=majority"
-```
-
-> ⚠️ **Never commit the `.env` file to GitHub!**
+Built at HackKU 2026.
 
 ---
 
-## 🎨 2. Frontend Setup (React/Vite)
+## What it does
 
-Open a new, second terminal window, navigate to the root of the project, and enter the `frontend` directory.
-
-```bash
-cd frontend
-```
-
-### Install Dependencies
-
-Run the Node package manager to install Vite, React, Axios, and any other frontend libraries.
-
-```bash
-npm install
-```
+- **Scan** — take a photo of any whiteboard architecture diagram
+- **Extract** — Gemini Vision parses nodes, edges, zones, and protocols
+- **Analyze** — get architectural feedback, a plain-English summary, and a confidence score
+- **Improve** — one tap to have Gemini refactor the architecture based on its own feedback
+- **Threat model** — STRIDE overlay highlights security risks on every node and edge
+- **Ask** — ask free-form questions about the diagram ("where is the single point of failure?")
+- **Share** — generate a public link so stakeholders can view the diagram without the app
+- **History** — all past scans stored in MongoDB Atlas with full-text search
 
 ---
 
-## 🏃 3. Running the Application Locally
+## Stack
 
-You will need **both terminals running simultaneously** to test the full stack.
+| Layer          | Tech                            |
+| -------------- | ------------------------------- |
+| Mobile / Web   | Expo (React Native)             |
+| Diagram canvas | ReactFlow (rendered in WebView) |
+| Backend        | FastAPI                         |
+| AI             | Gemini 2.5 Flash                |
+| Database       | MongoDB Atlas + Beanie ODM      |
+| Image storage  | Cloudinary                      |
 
-### Terminal 1: Start the Backend Server
+---
 
-Ensure your virtual environment is still active `(venv)`.
+## Prerequisites
+
+- Node 18+
+- Python 3.11+
+- MongoDB Atlas cluster
+- Gemini API key
+- Cloudinary account (free tier works)
+
+---
+
+## Setup
+
+### 1. Clone
+
+```bash
+git clone https://github.com/aepii/ArchLens.git
+cd archlens
+```
+
+### 2. Backend
 
 ```bash
 cd backend
+python -m venv venv
+source venv/bin/activate      # Windows: venv\Scripts\activate
+pip install -r requirements.txt
+```
+
+Create `backend/.env`:
+
+```
+GEMINI_API_KEY=your_gemini_key
+MONGODB_URI=mongodb+srv://user:pass@cluster.mongodb.net
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
+```
+
+Start the server:
+
+```bash
 uvicorn main:app --reload
 ```
 
-- Backend API: `http://127.0.0.1:8000`
-- Interactive API docs: `http://127.0.0.1:8000/docs`
+API runs at `http://localhost:8000`.
 
-### Terminal 2: Start the Frontend Development Server
+### 3. Frontend
 
 ```bash
 cd frontend
-npm run dev
+npm install
+npx expo start
 ```
 
-- Frontend: `http://localhost:5173`
+Scan the QR code with Expo Go, or press `w` for browser.
+
+### 4. Atlas Search index (for history search)
+
+In the MongoDB Atlas UI, go to your cluster → **Search** → **Create Search Index** → **JSON Editor**, select the `architectures` collection, and paste:
+
+```json
+{
+  "mappings": {
+    "dynamic": false,
+    "fields": {
+      "summary": [{ "type": "string" }],
+      "feedback": [{ "type": "string" }],
+      "nodes": {
+        "type": "document",
+        "fields": {
+          "label": [{ "type": "string" }],
+          "type": [{ "type": "string" }]
+        }
+      },
+      "zones": {
+        "type": "document",
+        "fields": { "label": [{ "type": "string" }] }
+      }
+    }
+  }
+}
+```
+
+Name it `default` and save. Takes ~1 minute to build.
 
 ---
 
-## 🌿 Git Workflow Reminder
+## Environment variables reference
 
-To avoid merge conflicts during the sprint, follow this process for every new feature:
-
-**1. Always pull the latest code first:**
-```bash
-git checkout main
-git pull origin main
-```
-
-**2. Create your feature branch:**
-```bash
-git checkout -b feature/your-feature-name
-```
-
-**3. Commit your changes and push:**
-```bash
-git add .
-git commit -m "Add descriptive message here"
-git push -u origin feature/your-feature-name
-```
-
-**4.** Open a **Pull Request (PR)** on GitHub to merge into `main`.
-
----
-
-Happy Hacking! 🚀
+| Variable                | Where   | Description             |
+| ----------------------- | ------- | ----------------------- |
+| `GEMINI_API_KEY`        | backend | Google AI Studio key    |
+| `MONGODB_URI`           | backend | Atlas connection string |
+| `CLOUDINARY_CLOUD_NAME` | backend | Cloudinary cloud name   |
+| `CLOUDINARY_API_KEY`    | backend | Cloudinary API key      |
+| `CLOUDINARY_API_SECRET` | backend | Cloudinary API secret   |
