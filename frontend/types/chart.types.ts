@@ -1,19 +1,11 @@
 // Represents a single node in the architecture diagram, including its unique identifier, type (e.g., component, service, database), label for display purposes, and a description of its role in the system
 export interface NodeSchema {
-<<<<<<< HEAD
   id: string;
   type: string;
   label: string;
   description: string;
   zone?: string | null;
   annotation?: string;
-=======
-  id: string
-  type: string
-  label: string
-  description: string
-  annotation?: string //added
->>>>>>> ac53590c80b066d7d46d8c5416702cf6ba784b7f
 }
 
 // Represents a directed connection between two nodes in the architecture diagram, with an optional label describing the relationship
