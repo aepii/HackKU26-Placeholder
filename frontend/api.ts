@@ -91,3 +91,17 @@ export async function askAboutArchitecture(
   if (!res.ok) throw new Error("Failed to ask");
   return res.json();
 }
+
+export async function getStats(): Promise<ArchStats> {
+  const res = await fetch(`${BASE}/api/stats`);
+  if (!res.ok) throw new Error("Failed to fetch stats");
+  return res.json();
+}
+
+export async function searchHistory(query: string): Promise<HistoryItem[]> {
+  const res = await fetch(
+    `${BASE}/api/history/search?q=${encodeURIComponent(query)}`,
+  );
+  if (!res.ok) throw new Error("Search failed");
+  return res.json();
+}

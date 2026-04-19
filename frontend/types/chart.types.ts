@@ -22,6 +22,7 @@ export interface ArchSchema {
   edges: EdgeSchema[];
   zones?: ZoneSchema[];
   feedback: string[];
+  summary?: string;
   image_filename?: string;
   share_token?: string;
   confidence?: number;
@@ -35,6 +36,7 @@ export interface HistoryItem {
   edges: EdgeSchema[];
   zones?: ZoneSchema[];
   feedback: string[];
+  summary?: string;
   image_filename: string | null;
   share_token?: string;
 }
@@ -48,4 +50,12 @@ export interface ZoneSchema {
 // Extended schema that includes improvement suggestions based on the analysis of the architecture diagram, in addition to the original nodes, edges, and feedback
 export interface ImprovedSchema extends ArchSchema {
   improvements: string[];
+}
+
+export interface ArchStats {
+  total_scans: { count: number }[];
+  node_type_distribution: { _id: string; count: number }[];
+  protocol_usage: { _id: string; count: number }[];
+  avg_complexity: { avgNodes: number; avgEdges: number; avgZones: number }[];
+  scans_over_time: { _id: string; count: number }[];
 }

@@ -1,10 +1,12 @@
 from fastapi import APIRouter, UploadFile, File, HTTPException
-from models import ArchitectureDoc, ImproveRequest, AskRequest
+from fastapi.responses import JSONResponse
+from models import ArchitectureDoc
 from services import (
     is_architecture_diagram,
     extract_architecture,
     generate_share_token,
     current_utc_timestamp,
+    generate_summary,
 )
 from services.gemini_service import improve_architecture
 from pydantic import BaseModel
@@ -13,7 +15,6 @@ import os
 import uuid
 
 UPLOAD_DIR = "uploads"
-
 router = APIRouter(prefix="/api", tags=["architecture"])
 
 
@@ -24,11 +25,12 @@ async def validate_architecture(file: UploadFile = File(...)):
         mime_type = file.content_type or "image/jpeg"
 
         gate = await is_architecture_diagram(image_bytes, mime_type)
-
         if not gate.get("is_architecture", False):
             raise HTTPException(
                 status_code=400,
-                detail=f"Image does not appear to be an architecture diagram. {gate.get('reason', '')}",
+                detail=gate.get(
+                    "reason", "Image does not appear to be an architecture diagram."
+                ),
             )
 
         ext = os.path.splitext(file.filename or "photo.jpg")[1] or ".jpg"
@@ -39,8 +41,16 @@ async def validate_architecture(file: UploadFile = File(...)):
 
         result = await extract_architecture(image_bytes, mime_type)
 
+        # Generate summary from extracted data
+        summary = await generate_summary(
+            result.get("nodes", []),
+            result.get("edges", []),
+            result.get("zones", []),
+        )
+
         doc = ArchitectureDoc(
             **result,
+            summary=summary,
             image_filename=saved_name,
             share_token=generate_share_token(),
             created_at=current_utc_timestamp(),
@@ -52,6 +62,7 @@ async def validate_architecture(file: UploadFile = File(...)):
             "id": str(doc.id),
             "image_filename": saved_name,
             "share_token": doc.share_token,
+            "summary": summary,
             "confidence": gate.get("confidence", 1.0),
             "confidence_reason": gate.get("reason", ""),
         }
@@ -68,6 +79,96 @@ async def get_history():
     return [{**d.model_dump(), "id": str(d.id)} for d in docs]
 
 
+@router.get("/history/search")
+async def search_history(q: str):
+    if not q.strip():
+        return []
+    pipeline = [
+        {
+            "$search": {
+                "index": "default",
+                "text": {
+                    "query": q,
+                    "path": {"wildcard": "*"},
+                    "fuzzy": {"maxEdits": 1},
+                },
+            }
+        },
+        {"$limit": 10},
+        {
+            "$addFields": {
+                "id": {"$toString": "$_id"},
+                "score": {"$meta": "searchScore"},
+            }
+        },
+        {"$unset": "_id"},
+    ]
+    collection = ArchitectureDoc.get_motor_collection()
+    results = await collection.aggregate(pipeline).to_list(10)
+    return results
+
+
+@router.get("/stats")
+async def get_stats():
+    collection = ArchitectureDoc.get_motor_collection()
+    pipeline = [
+        {
+            # Normalize missing arrays so $size never sees a missing field
+            "$addFields": {
+                "nodes": {"$ifNull": ["$nodes", []]},
+                "edges": {"$ifNull": ["$edges", []]},
+                "zones": {"$ifNull": ["$zones", []]},
+            }
+        },
+        {
+            "$facet": {
+                "total_scans": [{"$count": "count"}],
+                "node_type_distribution": [
+                    {"$unwind": "$nodes"},
+                    {"$group": {"_id": "$nodes.type", "count": {"$sum": 1}}},
+                    {"$sort": {"count": -1}},
+                ],
+                "protocol_usage": [
+                    {"$unwind": "$edges"},
+                    {"$match": {"edges.protocol": {"$ne": None}}},
+                    {"$group": {"_id": "$edges.protocol", "count": {"$sum": 1}}},
+                    {"$sort": {"count": -1}},
+                ],
+                "avg_complexity": [
+                    {
+                        "$project": {
+                            "nodeCount": {"$size": "$nodes"},
+                            "edgeCount": {"$size": "$edges"},
+                            "zoneCount": {"$size": "$zones"},
+                        }
+                    },
+                    {
+                        "$group": {
+                            "_id": None,
+                            "avgNodes": {"$avg": "$nodeCount"},
+                            "avgEdges": {"$avg": "$edgeCount"},
+                            "avgZones": {"$avg": "$zoneCount"},
+                        }
+                    },
+                ],
+                "scans_over_time": [
+                    {"$match": {"created_at": {"$ne": None}}},
+                    {
+                        "$group": {
+                            "_id": {"$substr": ["$created_at", 0, 10]},
+                            "count": {"$sum": 1},
+                        }
+                    },
+                    {"$sort": {"_id": 1}},
+                    {"$limit": 30},
+                ],
+            }
+        },
+    ]
+    result = await collection.aggregate(pipeline).to_list(1)
+    return result[0] if result else {}
+
+
 @router.delete("/history/{doc_id}")
 async def delete_history_item(doc_id: str):
     doc = await ArchitectureDoc.get(PydanticObjectId(doc_id))
@@ -81,6 +182,12 @@ async def delete_history_item(doc_id: str):
     return {"ok": True}
 
 
+class ImproveRequest(BaseModel):
+    nodes: list
+    edges: list
+    feedback: list[str]
+
+
 @router.post("/improve-architecture")
 async def improve_architecture_endpoint(body: ImproveRequest):
     try:
@@ -88,6 +195,13 @@ async def improve_architecture_endpoint(body: ImproveRequest):
         return result
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class AskRequest(BaseModel):
+    nodes: list
+    edges: list
+    zones: list = []
+    question: str
 
 
 @router.post("/ask")

@@ -164,3 +164,23 @@ async def ask_about_architecture(
         contents=[filled],
     )
     return response.text.strip()
+
+
+SUMMARY_PROMPT = """You are a senior software architect. Given this architecture data, write a single 2-3 sentence plain-English summary describing what this system does, its main components, and its overall pattern (e.g. microservices, monolith, event-driven).
+
+Architecture:
+{architecture_json}
+
+Return ONLY the summary text. No bullet points, no markdown, no labels."""
+
+
+async def generate_summary(nodes: list, edges: list, zones: list) -> str:
+    architecture_json = json.dumps(
+        {"nodes": nodes, "edges": edges, "zones": zones}, indent=2
+    )
+    filled = SUMMARY_PROMPT.format(architecture_json=architecture_json)
+    response = client.models.generate_content(
+        model="gemini-2.5-flash-lite",
+        contents=[filled],
+    )
+    return response.text.strip()

@@ -36,22 +36,57 @@ export default function RootLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: "#f7f4ef" },
-        headerTintColor: "#2c2c2c",
-        headerTitleStyle: { fontFamily: "Caveat_700Bold", fontSize: 22 },
-        headerShadowVisible: false,
-        contentStyle: { backgroundColor: "#f7f4ef" },
-      }}
-    >
-      <Stack.Screen name="index" options={{ title: "ArchLens" }} />
-      <Stack.Screen name="result" options={{ title: "Analysis" }} />
+    <Stack>
+      <Stack.Screen
+        name="index"
+        options={{
+          title: "ArchLens",
+          headerStyle: { backgroundColor: "#f7f4ef" },
+          headerTintColor: "#2c2c2c",
+          headerTitleStyle: { fontFamily: "Caveat_700Bold", fontSize: 22 },
+          headerShadowVisible: false,
+        }}
+      />
+      <Stack.Screen
+        name="result"
+        options={{
+          title: "Analysis",
+          headerStyle: { backgroundColor: "#f7f4ef" },
+          headerTintColor: "#2c2c2c",
+          headerTitleStyle: { fontFamily: "Caveat_700Bold", fontSize: 22 },
+          headerShadowVisible: false,
+        }}
+      />
       <Stack.Screen
         name="share/[token]"
-        options={{ title: "Shared Diagram" }}
+        options={{
+          title: "Shared Diagram",
+          headerStyle: { backgroundColor: "#f7f4ef" },
+          headerTintColor: "#2c2c2c",
+          headerTitleStyle: { fontFamily: "Caveat_700Bold", fontSize: 22 },
+          headerShadowVisible: false,
+        }}
       />
-      <Stack.Screen name="history" options={{ title: "Past Scans" }} />
+      <Stack.Screen
+        name="history"
+        options={{
+          title: "Past Scans",
+          headerStyle: { backgroundColor: "#f7f4ef" },
+          headerTintColor: "#2c2c2c",
+          headerTitleStyle: { fontFamily: "Caveat_700Bold", fontSize: 22 },
+          headerShadowVisible: false,
+        }}
+      />
+      <Stack.Screen
+        name="stats"
+        options={{
+          title: "Atlas Stats",
+          headerStyle: { backgroundColor: "#f7f4ef" },
+          headerTintColor: "#2c2c2c",
+          headerTitleStyle: { fontFamily: "Caveat_700Bold", fontSize: 22 },
+          headerShadowVisible: false,
+        }}
+      />
     </Stack>
   );
 }

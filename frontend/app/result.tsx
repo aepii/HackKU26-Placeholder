@@ -15,6 +15,7 @@ import ArchCanvas from "../components/ArchCanvas";
 import FeedbackPanel from "../components/FeedbackPanel";
 import ImprovementsPanel from "../components/ImprovementsPanel";
 import AskPanel from "../components/AskPanel";
+import SummaryCard from "../components/SummaryCard";
 import { theme } from "../constants/theme";
 
 const SHARE_BASE = "http://localhost:8081/share";
@@ -95,6 +96,8 @@ export default function ResultScreen() {
           threatMode={threatMode}
         />
       </View>
+
+      {current.summary && <SummaryCard summary={current.summary} />}
 
       {/* Action pills */}
       <View style={styles.pillRow}>

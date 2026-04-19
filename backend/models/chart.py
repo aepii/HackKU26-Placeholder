@@ -1,14 +1,24 @@
-from beanie import Document
+from beanie import Document, Indexed
 from pydantic import BaseModel, field_validator
-from typing import Optional
+from typing import Optional, Annotated
 
 
 class NodeSchema(BaseModel):
     id: str
     type: str
-    label: str
-    description: str
+    label: str = ""
+    description: str = ""
     zone: Optional[str] = None
+
+    @field_validator("label", "description", mode="before")
+    @classmethod
+    def coerce_str(cls, v):
+        return v or ""
+
+    @field_validator("zone", mode="before")
+    @classmethod
+    def coerce_zone(cls, v):
+        return None if (v is None or v == "null" or v == "") else v
 
 
 class EdgeSchema(BaseModel):
@@ -23,11 +33,16 @@ class EdgeSchema(BaseModel):
     def coerce_label(cls, v):
         return v or ""
 
+    @field_validator("protocol", mode="before")
+    @classmethod
+    def coerce_protocol(cls, v):
+        return None if (v is None or v == "null" or v == "") else v
+
 
 class ZoneSchema(BaseModel):
     id: str
-    label: str
-    color: str
+    label: str = ""
+    color: str = "slate"
 
 
 class ArchitectureDoc(Document):
@@ -35,10 +50,14 @@ class ArchitectureDoc(Document):
     edges: list[EdgeSchema]
     zones: list[ZoneSchema] = []
     feedback: list[str]
+    summary: Optional[str] = None
     image_filename: Optional[str] = None
     share_token: Optional[str] = None
     created_at: Optional[str] = None
 
     class Settings:
         name = "architectures"
-
+        indexes = [
+            "share_token",
+            "created_at",
+        ]
