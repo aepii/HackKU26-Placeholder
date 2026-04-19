@@ -98,6 +98,7 @@ export default function HistoryScreen() {
           feedback: item.feedback,
           summary: item.summary,
           image_filename: item.image_filename,
+          image_url: item.image_url,
           share_token: item.share_token,
         }),
       },
